@@ -1,0 +1,23 @@
+body {
+  color: #333;
+  font-family: 'Helvetica Neue', sans-serif;
+}
+
+h1 {
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  font-size: 64px;
+  font-weight: 100;
+  left: 0;
+  line-height: 1em;
+  margin-top: -32px;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  user-select: none;
+  width: 100%;
+}
