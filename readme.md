@@ -78,8 +78,8 @@ gives books with authors alive in the 19th Century.
 #### `ids`
 Use this to list books with Project Gutenberg ID numbers in a given list of numbers. They must be
 comma-separated positive integers. For example,
-[`/books?ids=11,12,13`](http://gutendex.com/books?ids=11,12,13) gives books with ID numbers 12, 13,
-and 14.
+[`/books?ids=11,12,13`](http://gutendex.com/books?ids=11,12,13) gives books with ID numbers 11, 12,
+and 13.
 
 #### `languages`
 Use this to find books in any of a list of languages. They must be comma-separated, two-character
