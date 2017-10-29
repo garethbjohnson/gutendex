@@ -51,7 +51,13 @@ def put_catalog_in_db():
     for directory_item in os.listdir(settings.CATALOG_RDF_DIR):
         item_path = os.path.join(settings.CATALOG_RDF_DIR, directory_item)
         if os.path.isdir(item_path):
-            book_ids += [int(directory_item)]
+            try:
+                book_id = int(directory_item)
+            except ValueError:
+                # Ignore the item if it's not a book ID number.
+                pass
+            else:
+                book_ids.append(book_id)
     book_ids.sort()
     book_directories = [str(id) for id in book_ids]
 
