@@ -153,7 +153,7 @@ Types of JSON objects served by Gutendex are given below.
   "download_count": <number>,
   "formats": <Format>,
   "languages": <array of strings>,
-  "media_type": <string>
+  "media_type": <string>,
   "subjects": <array of strings>,
   "title": <string>
 }
