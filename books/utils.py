@@ -1,5 +1,4 @@
 import xml.etree.ElementTree as parser
-import os
 import re
 
 
