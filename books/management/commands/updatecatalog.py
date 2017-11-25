@@ -82,6 +82,7 @@ def put_catalog_in_db():
 
             if book_in_db.exists():
                 book_in_db = book_in_db[0]
+                book_in_db.copyright = book['copyright']
                 book_in_db.download_count = book['downloads']
                 book_in_db.media_type = book['type']
                 book_in_db.title = book['title']
@@ -89,6 +90,7 @@ def put_catalog_in_db():
             else:
                 book_in_db = Book.objects.create(
                     gutenberg_id=id,
+                    copyright=book['copyright'],
                     download_count=book['downloads'],
                     media_type=book['type'],
                     title=book['title']

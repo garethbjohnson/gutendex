@@ -49,6 +49,7 @@ class BookSerializer(serializers.ModelSerializer):
             'id',
             'authors',
             'bookshelves',
+            'copyright',
             'download_count',
             'formats',
             'languages',

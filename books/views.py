@@ -42,6 +42,21 @@ class BookViewSet(viewsets.ModelViewSet):
                 Q(authors__death_year__gte=author_year_start)
             )
 
+        copyright_parameter = self.request.GET.get('copyright')
+        if copyright_parameter is not None:
+            copyright_strings = copyright_parameter.split(',')
+            copyright_values = set()
+            for copyright_string in copyright_strings:
+                if copyright_string == 'true':
+                    copyright_values.add(True)
+                elif copyright_string == 'false':
+                    copyright_values.add(False)
+                elif copyright_string == 'null':
+                    copyright_values.add(None)
+            for value in [True, False, None]:
+                if value not in copyright_values:
+                    queryset = queryset.exclude(copyright=value)
+
         id_string = self.request.GET.get('ids')
         if id_string is not None:
             ids = id_string.split(',')

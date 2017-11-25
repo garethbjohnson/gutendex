@@ -75,6 +75,13 @@ authors alive before 500 BCE, and
 [`/books?author_year_start=1800&author_year_end=1899`](http://gutendex.com/books?author_year_start=1800&author_year_end=1899)
 gives books with authors alive in the 19th Century.
 
+#### `copyright`
+Use this to find books with a certain copyright status: `true` for books with existing copyrights,
+`false` for books in the [public domain](https://en.wikipedia.org/wiki/Public_domain) in the USA, or
+`null` for books with no available copyright information. These can be combined with commas. For
+example, [`/books?copyright=true,false`](http://gutendex.com/books?copyright=true,false) gives books
+with available copyright information.
+
 #### `ids`
 Use this to list books with Project Gutenberg ID numbers in a given list of numbers. They must be
 comma-separated positive integers. For example,
@@ -142,6 +149,7 @@ Types of JSON objects served by Gutendex are given below.
   "id": <number of Project Gutenberg ID>,
   "authors": <array of Authors>,
   "bookshelves": <array of strings>,
+  "copyright": <boolean or null>,
   "download_count": <number>,
   "formats": <Format>,
   "languages": <array of strings>,

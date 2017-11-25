@@ -50,7 +50,8 @@ def get_book(id, xml_file_path):
         'languages': [],
         'formats': [],
         'downloads': None,
-        'bookshelves': []
+        'bookshelves': [],
+        'copyright': None
     }
 
     # Authors
@@ -97,6 +98,15 @@ def get_book(id, xml_file_path):
         if value is not None:
             result['bookshelves'].add(value.text)
     result['bookshelves'] = list(result['bookshelves'])
+
+    # Copyright
+    rights = book.find('.//{%(dc)s}rights' % NAMESPACES)
+    if rights.text.startswith('Public domain in the USA.'):
+        result['copyright'] = False
+    elif rights.text.startswith('Copyrighted.'):
+        result['copyright'] = True
+    else:
+        result['copyright'] = None
 
     # Formats
     result['formats'] = {

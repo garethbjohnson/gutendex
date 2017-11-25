@@ -10,6 +10,7 @@ class Author(models.Model):
 class Book(models.Model):
     authors = models.ManyToManyField('Author')
     bookshelves = models.ManyToManyField('Bookshelf')
+    copyright = models.NullBooleanField()
     download_count = models.PositiveIntegerField(blank=True, null=True)
     gutenberg_id = models.PositiveIntegerField(unique=True)
     languages = models.ManyToManyField('Language')
