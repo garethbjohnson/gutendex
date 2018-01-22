@@ -281,7 +281,12 @@ class Command(BaseCommand):
 
             log('  Removing stale directories and books...')
             for directory in stale_directory_set:
-                book = Book.objects.filter(gutenberg_id=directory)
+                try:
+                    book_id = int(directory)
+                except ValueError:
+                    # Ignore the directory if its name isn't a book ID number.
+                    continue
+                book = Book.objects.filter(gutenberg_id=book_id)
                 book.delete()
                 path = os.path.join(MOVE_TARGET_PATH, directory)
                 shutil.rmtree(path)
