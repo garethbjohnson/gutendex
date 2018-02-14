@@ -47,7 +47,7 @@ def get_book(id, xml_file_path):
         'type': None,
         'subjects': [],
         'languages': [],
-        'formats': [],
+        'formats': {},
         'downloads': None,
         'bookshelves': [],
         'copyright': None
@@ -107,12 +107,12 @@ def get_book(id, xml_file_path):
     else:
         result['copyright'] = None
 
-    # Formats
-    result['formats'] = {
-        file.find('{%(dc)s}format//{%(rdf)s}value' % NAMESPACES).text:
-        file.get('{%(rdf)s}about' % NAMESPACES)
-        for file in book.findall('.//{%(pg)s}file' % NAMESPACES)
-    }
+    # Formats (Prefer image urls to noimage urls)
+    for file in book.findall('.//{%(pg)s}file' % NAMESPACES):
+        mimetype = file.find('{%(dc)s}format//{%(rdf)s}value' % NAMESPACES).text
+        url = file.get('{%(rdf)s}about' % NAMESPACES)
+        if mimetype not in result['formats'] or 'noimages' in result['formats'][mimetype]:
+            result['formats'][mimetype] = url
 
     # Type
     book_type = book.find(
