@@ -118,7 +118,7 @@ Literature" bookshelf, with the subject "Sick children -- Fiction", and so on.
 
 ### Individual Books
 
-Individual books can be found at `/book/<id>`, where `<id>` is the book's Project Gutenberg ID
+Individual books can be found at `/books/<id>`, where `<id>` is the book's Project Gutenberg ID
 number. Error responses will appear in this format:
 
 ```
