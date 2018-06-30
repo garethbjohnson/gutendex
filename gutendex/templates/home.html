@@ -1,5 +1,203 @@
-{% extends 'base.html' %}
+{% load static %}<!doctype html>
 
-{% block content %}
-  <h1>Gutendex</h1>
-{% endblock content %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Gutendex</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  </head>
+
+  <body>
+    <a href="https://github.com/garethbjohnson/gutendex" class="github-corner" aria-label="View source on Github">
+      <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+      </svg>
+    </a>
+
+    <style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
+    <div class="container">
+      <header class="my-4 text-center">
+        <h1 class="display-3">Gutendex</h1>
+        <p class="lead">JSON web API for Project Gutenberg ebook metadata</p>
+      </header>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div id="api-explorer" class="jumbotron bg-dark text-light">
+            <h2 class="display-4 mb-4">Try it</h2>
+
+            <p class="lead mb-4">Test queries here. See the docs below.</p>
+
+            <form id="ax-form" class="input-group hidden mb-4">
+              <input id="ax-url" type="text" class="form-control border-0 bg-white text-monospace" value="/books"></input>
+
+              <div class="input-group-append">
+                <input class="btn btn-primary btn-lg text-uppercase" type="submit" value="Get">
+              </div>
+            </form>
+
+            <textarea id="ax-results" class="form-control form-control-sm bg-white border-0 text-monospace" readonly rows="10"></textarea>
+          </div>
+
+          <h2 id="docs" class="display-4">Documention</h2>
+
+          <p>
+            For long-term use, please run your own server with the code and installation
+            instructions on <a href="https://github.com/garethbjohnson/gutendex">GitHub</a>.
+          </p>
+
+          <h3>Lists of Books</h3>
+
+          <p>
+            Lists of book information in the database are queried using the API at
+            <code>/books</code> (e.g. <code>gutendex.com/books</code>). Book data will be returned
+            in the format
+          </p>
+
+<pre><code>{
+  "count": &lt;number&gt;,
+  "next": &lt;string or null&gt;,
+  "previous": &lt;string or null&gt;,
+  "results": &lt;array of Books&gt;
+}</code></pre>
+
+          <p>
+            where <code>results</code> is an array of 0-32 book objects, <code>next</code> and
+            <code>previous</code> are URLs to the next and previous pages of results, and
+            <code>count</code> in the total number of books for the query on all pages combined.
+          </p>
+
+          <p>
+            Books are ordered by popularity, determined by their numbers of downloads from Project
+            Gutenberg.
+          </p>
+
+          <p>
+            Parameters can also be added to book-list queries in a typical URL format. For example,
+            to get the first page of written by authors alive after 1899 and published in English
+            or French, you can go to <code>/books?author_year_start=1900&amp;languages=en,fr</code>
+          </p>
+
+          <p>You can find available query parameters below.</p>
+
+          <h4><code>author_year_start</code> and <code>author_year_end</code></h4>
+
+          <p>
+            Use these to find books with at least one author alive in a given range of years. They
+            must have positive or negative integer values. For example,
+            <code>/books?author_year_end=-499</code> gives books with authors alive before 500 BCE,
+            and <code>/books?author_year_start=1800&amp;author_year_end=1899</code> gives books
+            with authors alive in the 19th Century.
+          </p>
+
+          <h4><code>copyright</code></h4>
+
+          <p>
+            Use this to find books with a certain copyright status: <code>true</code> for books
+            with existing copyrights, <code>false</code> for books in the public domain    in the
+            USA, or <code>null</code> for books with no available copyright information. These can
+            be combined with commas. For example, <code>/books?copyright=true,false</code> gives
+            books with available copyright information.
+          </p>
+
+          <h4><code>ids</code></h4>
+
+          <p>
+            Use this to list books with Project Gutenberg ID numbers in a given list of numbers.
+            They must be comma-separated positive integers. For example,
+            <code>/books?ids=11,12,13</code> gives books with ID numbers 11, 12, and 13.
+          </p>
+
+          <h4><code>languages</code></h4>
+
+          <p>
+            Use this to find books in any of a list of languages. They must be comma-separated,
+            two-character language codes. For example, <code>/books?languages=en</code> gives books
+            in English, and <code>/books?languages=fr,fi</code> gives books in either French or
+            Finnish or both.
+          </p>
+
+          <h4><code>mime_type</code></h4>
+
+          <p>
+            Use this to find books with a given MIME type. Gutendex gives every book with a MIME
+            type <em>starting with</em> the value. For example,
+            <code>/books?mime_type=text%2F</code> gives books with types <code>text/html</code>,
+            <code>text/plain; charset=us-ascii</code>, etc.; and
+            <code>/books?mime_type=text%2Fhtml</code> gives books with types
+            <code>text/html</code>, <code>text/html; charset=utf-8</code>, etc.
+          </p>
+
+          <h4><code>search</code></h4>
+
+          <p>
+            Use this to search author names and book titles with given words. They must be
+            separated by a space (i.e. <code>%20</code> in URL-encoded format) and are
+            case-insensitive. For example, <code>/books?search=dickens%20great</code> includes
+            <em>Great Expectations</em> by Charles Dickens.
+          </p>
+
+          <h4><code>topic</code></h4>
+
+          <p>
+            Use this to search for a case-insensitive key-phrase in books' bookshelves or subjects.
+            For example, <code>/books?topic=children</code> gives books on the "Children's
+            Literature" bookshelf, with the subject "Sick children -- Fiction", and so on.
+          </p>
+
+          <h3>Individual Books</h3>
+
+          <p>
+            Individual books can be found at <code>/book/&lt;id&gt;</code>, where
+            <code>&lt;id&gt;</code> is the book's Project Gutenberg ID number. Error responses will
+            appear in this format:
+          </p>
+
+<pre><code>{
+  "detail": &lt;string of error message&gt;
+}</code></pre>
+
+          <h3>API Objects</h3>
+
+          <p>Types of JSON objects served by Gutendex are given below.</p>
+
+          <h4>Author</h4>
+
+<pre><code>{
+  "birth_year": &lt;number or null&gt;,
+  "death_year": &lt;number or null&gt;,
+  "name": &lt;string&gt;
+}</code></pre>
+
+          <h4>Book</h4>
+
+<pre><code>{
+  "id": &lt;number of Project Gutenberg ID&gt;,
+  "title": &lt;string&gt;,
+  "subjects": &lt;array of strings&gt;,
+  "authors": &lt;array of Authors&gt;,
+  "bookshelves": &lt;array of strings&gt;,
+  "languages": &lt;array of strings&gt;,
+  "copyright": &lt;boolean or null&gt;,
+  "media_type": &lt;string&gt;,
+  "formats": &lt;Format&gt;,
+  "download_count": &lt;number&gt;
+}</code></pre>
+
+          <h4>Format</h4>
+
+<pre><code>{
+  &lt;string of MIME-type&gt;: &lt;string of URL&gt;,
+  ...
+}</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <script src="{% static 'scripts/index.js' %}"></script>
+  </body>
+</html>

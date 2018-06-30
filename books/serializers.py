@@ -6,7 +6,7 @@ from .models import *
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ('birth_year', 'death_year', 'name')
+        fields = ('name', 'birth_year', 'death_year')
 
 
 class BookshelfSerializer(serializers.ModelSerializer):
@@ -47,15 +47,15 @@ class BookSerializer(serializers.ModelSerializer):
         model = Book
         fields = (
             'id',
+            'title',
             'authors',
-            'bookshelves',
-            'copyright',
-            'download_count',
-            'formats',
-            'languages',
-            'media_type',
             'subjects',
-            'title'
+            'bookshelves',
+            'languages',
+            'copyright',
+            'media_type',
+            'formats',
+            'download_count'
         )
 
     def get_bookshelves(self, book):

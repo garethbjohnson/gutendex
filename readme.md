@@ -5,6 +5,8 @@ Gutendex is a simple, self-hosted [web API](https://en.wikipedia.org/wiki/Web_AP
 catalog information from [Project Gutenberg](https://www.gutenberg.org/wiki/Main_Page), an online
 library of free ebooks.
 
+Try it at [`gutendex.com`](http://gutendex.com).
+
 
 Why?
 ----
@@ -147,15 +149,15 @@ Types of JSON objects served by Gutendex are given below.
 ```
 {
   "id": <number of Project Gutenberg ID>,
+  "title": <string>,
   "authors": <array of Authors>,
-  "bookshelves": <array of strings>,
-  "copyright": <boolean or null>,
-  "download_count": <number>,
-  "formats": <Format>,
-  "languages": <array of strings>,
-  "media_type": <string>,
   "subjects": <array of strings>,
-  "title": <string>
+  "bookshelves": <array of strings>,
+  "languages": <array of strings>,
+  "copyright": <boolean or null>,
+  "media_type": <string>,
+  "formats": <Format>,
+  "download_count": <number>
 }
 ```
 
