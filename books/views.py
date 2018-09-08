@@ -1,6 +1,6 @@
 from django.db.models import Q
 
-from rest_framework import viewsets
+from rest_framework import exceptions as drf_exceptions, viewsets
 
 from .models import *
 from .serializers import *
@@ -58,7 +58,13 @@ class BookViewSet(viewsets.ModelViewSet):
         id_string = self.request.GET.get('ids')
         if id_string is not None:
             ids = id_string.split(',')
-            queryset = queryset.filter(gutenberg_id__in=ids)
+
+            try:
+                ids = [int(id) for id in ids]
+            except ValueError:
+                pass
+            else:
+                queryset = queryset.filter(gutenberg_id__in=ids)
 
         language_string = self.request.GET.get('languages')
         if language_string is not None:
