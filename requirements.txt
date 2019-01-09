@@ -1,6 +1,6 @@
-Django==1.10.5
-django-environ==0.4.1
-djangorestframework==3.5.3
+Django==1.10.8
+django-environ==0.4.5
+djangorestframework==3.5.4
 inflection==0.3.1
 psycopg2==2.6.2
 six==1.10.0
