@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Other third-party apps
+    'corsheaders',
     'rest_framework',
 
     # Project apps
@@ -63,6 +64,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -192,3 +194,7 @@ REST_FRAMEWORK = {
     ),
     'PAGE_SIZE': 32
 }
+
+
+# Cross-origin resource sharing with `corsheaders` middleware
+CORS_ORIGIN_ALLOW_ALL = True

@@ -1,4 +1,5 @@
 Django==1.11.20
+django-cors-headers==3.1.1
 django-environ==0.4.5
 djangorestframework==3.5.4
 inflection==0.3.1
