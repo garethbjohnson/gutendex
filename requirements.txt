@@ -1,7 +1,7 @@
 Django==1.11.20
 django-cors-headers==3.1.1
 django-environ==0.4.5
-djangorestframework==3.5.4
+djangorestframework==3.9.1
 inflection==0.3.1
 psycopg2==2.7.1
 six==1.10.0
