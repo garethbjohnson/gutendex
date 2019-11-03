@@ -39,7 +39,7 @@ class Bookshelf(models.Model):
 
 
 class Format(models.Model):
-    book = models.ForeignKey('Book')
+    book = models.ForeignKey('Book', on_delete=models.CASCADE)
     mime_type = models.CharField(max_length=32)
     url = models.CharField(max_length=256)
 
