@@ -16,7 +16,7 @@ from books.models import *
 
 TEMP_PATH = settings.CATALOG_TEMP_DIR
 
-URL = 'http://gutenberg.readingroo.ms/cache/generated/feeds/rdf-files.tar.bz2'
+URL = 'https://gutenberg.org/cache/epub/feeds/rdf-files.tar.bz2'
 DOWNLOAD_PATH = os.path.join(TEMP_PATH, 'catalog.tar.bz2')
 
 MOVE_SOURCE_PATH = os.path.join(TEMP_PATH, 'cache/epub')
