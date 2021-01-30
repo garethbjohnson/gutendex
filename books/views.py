@@ -27,6 +27,10 @@ class BookViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
 
         author_year_end = self.request.GET.get('author_year_end')
+        try:
+            author_year_end = int(author_year_end)
+        except:
+            author_year_end = None
         if author_year_end is not None:
             queryset = queryset.filter(
                 Q(authors__birth_year__lte=author_year_end) |
@@ -34,6 +38,10 @@ class BookViewSet(viewsets.ModelViewSet):
             )
 
         author_year_start = self.request.GET.get('author_year_start')
+        try:
+            author_year_start = int(author_year_start)
+        except:
+            author_year_start = None
         if author_year_start is not None:
             queryset = queryset.filter(
                 Q(authors__birth_year__gte=author_year_start) |
