@@ -6,6 +6,7 @@ LINE_BREAK_PATTERN = re.compile(r'[ \t]*[\n\r]+[ \t]*')
 NAMESPACES = {
     'dc': 'http://purl.org/dc/terms/',
     'dcam': 'http://purl.org/dc/dcam/',
+    'marcrel': 'http://id.loc.gov/vocabulary/relators/',
     'pg': 'http://www.gutenberg.org/2009/pgterms/',
     'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 }
@@ -44,6 +45,7 @@ def get_book(id, xml_file_path):
         'id': int(id),
         'title': None,
         'authors': [],
+        'translators': [],
         'type': None,
         'subjects': [],
         'languages': [],
@@ -68,6 +70,22 @@ def get_book(id, xml_file_path):
         if death is not None:
             author['death'] = int(death.text)
         result['authors'] += [author]
+
+    # Translators
+    translator_elements = book.findall('.//{%(marcrel)s}trl' % NAMESPACES)
+    for translator_element in translator_elements:
+        translator = {'birth': None, 'death': None}
+        name = translator_element.find('.//{%(pg)s}name' % NAMESPACES)
+        if name is None:
+            continue
+        translator['name'] = safe_unicode(name.text, encoding='UTF-8')
+        birth = translator_element.find('.//{%(pg)s}birthdate' % NAMESPACES)
+        if birth is not None:
+            translator['birth'] = int(birth.text)
+        death = translator_element.find('.//{%(pg)s}deathdate' % NAMESPACES)
+        if death is not None:
+            translator['death'] = int(death.text)
+        result['translators'] += [translator]
 
     # Title
     title = book.find('.//{%(dc)s}title' % NAMESPACES)

@@ -165,21 +165,14 @@
 
           <p>Types of JSON objects served by Gutendex are given below.</p>
 
-          <h4>Author</h4>
-
-<pre><code>{
-  "birth_year": &lt;number or null&gt;,
-  "death_year": &lt;number or null&gt;,
-  "name": &lt;string&gt;
-}</code></pre>
-
           <h4>Book</h4>
 
 <pre><code>{
   "id": &lt;number of Project Gutenberg ID&gt;,
   "title": &lt;string&gt;,
   "subjects": &lt;array of strings&gt;,
-  "authors": &lt;array of Authors&gt;,
+  "authors": &lt;array of Persons&gt;,
+  "translators": &lt;array of Persons&gt;,
   "bookshelves": &lt;array of strings&gt;,
   "languages": &lt;array of strings&gt;,
   "copyright": &lt;boolean or null&gt;,
@@ -193,6 +186,14 @@
 <pre><code>{
   &lt;string of MIME-type&gt;: &lt;string of URL&gt;,
   ...
+}</code></pre>
+
+          <h4>Person</h4>
+
+<pre><code>{
+  "birth_year": &lt;number or null&gt;,
+  "death_year": &lt;number or null&gt;,
+  "name": &lt;string&gt;
 }</code></pre>
         </div>
       </div>

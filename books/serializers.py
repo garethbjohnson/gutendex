@@ -3,12 +3,6 @@ from rest_framework import serializers
 from .models import *
 
 
-class AuthorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Author
-        fields = ('name', 'birth_year', 'death_year')
-
-
 class BookshelfSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bookshelf
@@ -27,6 +21,12 @@ class LanguageSerializer(serializers.ModelSerializer):
         fields = ('code',)
 
 
+class PersonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ('name', 'birth_year', 'death_year')
+
+
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
@@ -35,11 +35,12 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 class BookSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
-    authors = AuthorSerializer(many=True)
+    authors = PersonSerializer(many=True)
     bookshelves = serializers.SerializerMethodField()
     formats = serializers.SerializerMethodField()
     languages = serializers.SerializerMethodField()
     subjects = serializers.SerializerMethodField()
+    translators = PersonSerializer(many=True)
 
     lookup_field = 'gutenberg_id'
 
@@ -49,6 +50,7 @@ class BookSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'authors',
+            'translators',
             'subjects',
             'bookshelves',
             'languages',

@@ -133,16 +133,6 @@ number. Error responses will appear in this format:
 
 Types of JSON objects served by Gutendex are given below.
 
-#### Author
-
-```
-{
-  "birth_year": <number or null>,
-  "death_year": <number or null>,
-  "name": <string>
-}
-```
-
 
 #### Book
 
@@ -150,7 +140,8 @@ Types of JSON objects served by Gutendex are given below.
 {
   "id": <number of Project Gutenberg ID>,
   "title": <string>,
-  "authors": <array of Authors>,
+  "authors": <array of Persons>,
+  "translators": <array of Persons>,
   "subjects": <array of strings>,
   "bookshelves": <array of strings>,
   "languages": <array of strings>,
@@ -168,5 +159,16 @@ Types of JSON objects served by Gutendex are given below.
 {
   <string of MIME-type>: <string of URL>,
   ...
+}
+```
+
+
+#### Person
+
+```
+{
+  "birth_year": <number or null>,
+  "death_year": <number or null>,
+  "name": <string>
 }
 ```

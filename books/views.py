@@ -6,12 +6,6 @@ from .models import *
 from .serializers import *
 
 
-class AuthorViewSet(viewsets.ModelViewSet):
-    """ This is an API endpoint that allows authors to be viewed. """
-    queryset = Author.objects.all().order_by('birth_year')
-    serializer_class = AuthorSerializer
-
-
 class BookViewSet(viewsets.ModelViewSet):
     """ This is an API endpoint that allows books to be viewed. """
 
@@ -98,27 +92,3 @@ class BookViewSet(viewsets.ModelViewSet):
             )
 
         return queryset.distinct()
-
-
-class BookshelfViewSet(viewsets.ModelViewSet):
-    """ This is an API endpoint that allows book shelves to be viewed. """
-    queryset = Bookshelf.objects.all().order_by('name')
-    serializer_class = BookshelfSerializer
-
-
-class FormatViewSet(viewsets.ModelViewSet):
-    """ This is an API endpoint that allows book formats to be viewed. """
-    queryset = Format.objects.all().order_by('book__download_count')
-    serializer_class = FormatSerializer
-
-
-class LanguageViewSet(viewsets.ModelViewSet):
-    """ This is an API endpoint that allows languages to be viewed. """
-    queryset = Language.objects.all().order_by('code')
-    serializer_class = LanguageSerializer
-
-
-class SubjectViewSet(viewsets.ModelViewSet):
-    """ This is an API endpoint that allows book subjects to be viewed. """
-    queryset = Subject.objects.all().order_by('name')
-    serializer_class = SubjectSerializer

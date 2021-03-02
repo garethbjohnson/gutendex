@@ -100,24 +100,47 @@ def put_catalog_in_db():
 
             authors = []
             for author in book['authors']:
-                author_in_db = Author.objects.filter(
+                person = Person.objects.filter(
                     name=author['name'],
                     birth_year=author['birth'],
                     death_year=author['death']
                 )
-                if author_in_db.exists():
-                    author_in_db = author_in_db[0]
+                if person.exists():
+                    person = person[0]
                 else:
-                    author_in_db = Author.objects.create(
+                    person = Person.objects.create(
                         name=author['name'],
                         birth_year=author['birth'],
                         death_year=author['death']
                     )
-                authors.append(author_in_db)
+                authors.append(person)
 
             book_in_db.authors.clear()
             for author in authors:
                 book_in_db.authors.add(author)
+
+            ''' Make/update the translators. '''
+
+            translators = []
+            for translator in book['translators']:
+                person = Person.objects.filter(
+                    name=translator['name'],
+                    birth_year=translator['birth'],
+                    death_year=translator['death']
+                )
+                if person.exists():
+                    person = person[0]
+                else:
+                    person = Person.objects.create(
+                        name=translator['name'],
+                        birth_year=translator['birth'],
+                        death_year=translator['death']
+                    )
+                translators.append(person)
+
+            book_in_db.translators.clear()
+            for translator in translators:
+                book_in_db.translators.add(translator)
 
             ''' Make/update the book shelves. '''
 
@@ -291,7 +314,7 @@ class Command(BaseCommand):
                 path = os.path.join(MOVE_TARGET_PATH, directory)
                 shutil.rmtree(path)
 
-            log('  Replacing old catalog...')
+            log('  Replacing old catalog files...')
             with open(os.devnull, 'w') as null:
                 with open(LOG_PATH, 'a') as log_file:
                     call(
