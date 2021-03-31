@@ -19,7 +19,7 @@ TEMP_PATH = settings.CATALOG_TEMP_DIR
 URL = 'https://gutenberg.org/cache/epub/feeds/rdf-files.tar.bz2'
 DOWNLOAD_PATH = os.path.join(TEMP_PATH, 'catalog.tar.bz2')
 
-MOVE_SOURCE_PATH = os.path.join(TEMP_PATH, 'cache/epub')
+MOVE_SOURCE_PATH = os.path.join(TEMP_PATH, 'export/sunsite/users/gutenbackend/cache/epub')
 MOVE_TARGET_PATH = settings.CATALOG_RDF_DIR
 
 LOG_DIRECTORY = settings.CATALOG_LOG_DIR
