@@ -139,8 +139,7 @@ def get_book(id, xml_file_path):
     book_type = book.find(
         './/{%(dc)s}type//{%(rdf)s}value' % NAMESPACES
     )
-    if book_type is not None:
-        result['type'] = book_type.text
+    result['type'] = 'Text' if book_type is None else book_type.text
 
     # Languages
     languages = book.findall(
