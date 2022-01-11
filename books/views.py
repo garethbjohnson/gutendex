@@ -11,14 +11,21 @@ class BookViewSet(viewsets.ModelViewSet):
 
     lookup_field = 'gutenberg_id'
 
-    queryset = Book.objects.all()
-    queryset = queryset.order_by('-download_count')
-    queryset = queryset.exclude(download_count__isnull=True)
+    queryset = Book.objects.exclude(download_count__isnull=True)
+    queryset = queryset.exclude(title__isnull=True)
 
     serializer_class = BookSerializer
 
     def get_queryset(self):
         queryset = self.queryset
+
+        sort = self.request.GET.get('sort')
+        if sort == 'ascending':
+            queryset = queryset.order_by('id')
+        elif sort == 'descending':
+            queryset = queryset.order_by('-id')
+        else:
+            queryset = queryset.order_by('-download_count')
 
         author_year_end = self.request.GET.get('author_year_end')
         try:

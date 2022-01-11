@@ -61,7 +61,8 @@ where `results` is an array of 0-32 book objects, `next` and `previous` are URLs
 previous pages of results, and `count` in the total number of books for the query on all pages
 combined.
 
-Books are ordered by popularity, determined by their numbers of downloads from Project Gutenberg.
+By default, books are ordered by popularity, determined by their numbers of downloads from Project
+Gutenberg.
 
 Parameters can also be added to book-list queries in a typical URL format. For example, to get the
 first page of written by authors alive after 1899 and published in English or French, you can go to
@@ -109,6 +110,11 @@ Use this to search author names and book titles with given words. They must be s
 (i.e. `%20` in URL-encoded format) and are case-insensitive. For example,
 [`/books?search=dickens%20great`](http://gutendex.com/books?search=dickens%20great) includes *Great
 Expectations* by Charles Dickens.
+
+#### `sort`
+Use this to sort books: `ascending` for Project Gutenberg ID numbers from lowest to highest,
+`descending` for IDs highest to lowest, or `popular` (the default) for most popular to least
+popular by number of downloads.
 
 #### `topic`
 Use this to search for a case-insensitive key-phrase in books' bookshelves or subjects. For example,
