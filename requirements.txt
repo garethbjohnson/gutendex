@@ -5,3 +5,4 @@ djangorestframework
 inflection
 psycopg2
 six
+gunicorn==20.0.4

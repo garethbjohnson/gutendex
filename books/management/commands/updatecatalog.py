@@ -271,63 +271,63 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            date_and_time = strftime('%H:%M:%S on %B %d, %Y')
-            log('Starting script at', date_and_time)
+            # date_and_time = strftime('%H:%M:%S on %B %d, %Y')
+            # log('Starting script at', date_and_time)
 
-            log('  Making temporary directory...')
-            if os.path.exists(TEMP_PATH):
-                raise CommandError(
-                    'The temporary path, `' + TEMP_PATH + '`, already exists.'
-                )
-            else:
-                os.makedirs(TEMP_PATH)
+            # log('  Making temporary directory...')
+            # if os.path.exists(TEMP_PATH):
+            #     raise CommandError(
+            #         'The temporary path, `' + TEMP_PATH + '`, already exists.'
+            #     )
+            # else:
+            #     os.makedirs(TEMP_PATH)
 
-            log('  Downloading compressed catalog...')
-            urllib.request.urlretrieve(URL, DOWNLOAD_PATH)
+            # log('  Downloading compressed catalog...')
+            # urllib.request.urlretrieve(URL, DOWNLOAD_PATH)
 
-            log('  Decompressing catalog...')
-            if not os.path.exists(DOWNLOAD_PATH):
-                os.makedirs(DOWNLOAD_PATH)
-            with open(os.devnull, 'w') as null:
-                call(
-                    ['tar', 'fjvx', DOWNLOAD_PATH, '-C', TEMP_PATH],
-                    stdout=null,
-                    stderr=null
-                )
+            # log('  Decompressing catalog...')
+            # if not os.path.exists(DOWNLOAD_PATH):
+            #     os.makedirs(DOWNLOAD_PATH)
+            # with open(os.devnull, 'w') as null:
+            #     call(
+            #         ['tar', 'fjvx', DOWNLOAD_PATH, '-C', TEMP_PATH],
+            #         stdout=null,
+            #         stderr=null
+            #     )
 
-            log('  Detecting stale directories...')
-            if not os.path.exists(MOVE_TARGET_PATH):
-                os.makedirs(MOVE_TARGET_PATH)
-            new_directory_set = get_directory_set(MOVE_SOURCE_PATH)
-            old_directory_set = get_directory_set(MOVE_TARGET_PATH)
-            stale_directory_set = old_directory_set - new_directory_set
+            # log('  Detecting stale directories...')
+            # if not os.path.exists(MOVE_TARGET_PATH):
+            #     os.makedirs(MOVE_TARGET_PATH)
+            # new_directory_set = get_directory_set(MOVE_SOURCE_PATH)
+            # old_directory_set = get_directory_set(MOVE_TARGET_PATH)
+            # stale_directory_set = old_directory_set - new_directory_set
 
-            log('  Removing stale directories and books...')
-            for directory in stale_directory_set:
-                try:
-                    book_id = int(directory)
-                except ValueError:
-                    # Ignore the directory if its name isn't a book ID number.
-                    continue
-                book = Book.objects.filter(gutenberg_id=book_id)
-                book.delete()
-                path = os.path.join(MOVE_TARGET_PATH, directory)
-                shutil.rmtree(path)
+            # log('  Removing stale directories and books...')
+            # for directory in stale_directory_set:
+            #     try:
+            #         book_id = int(directory)
+            #     except ValueError:
+            #         # Ignore the directory if its name isn't a book ID number.
+            #         continue
+            #     book = Book.objects.filter(gutenberg_id=book_id)
+            #     book.delete()
+            #     path = os.path.join(MOVE_TARGET_PATH, directory)
+            #     shutil.rmtree(path)
 
-            log('  Replacing old catalog files...')
-            with open(os.devnull, 'w') as null:
-                with open(LOG_PATH, 'a') as log_file:
-                    call(
-                        [
-                            'rsync',
-                            '-va',
-                            '--delete-after',
-                            MOVE_SOURCE_PATH + '/',
-                            MOVE_TARGET_PATH
-                        ],
-                        stdout=null,
-                        stderr=log_file
-                    )
+            # log('  Replacing old catalog files...')
+            # with open(os.devnull, 'w') as null:
+            #     with open(LOG_PATH, 'a') as log_file:
+            #         call(
+            #             [
+            #                 'rsync',
+            #                 '-va',
+            #                 '--delete-after',
+            #                 MOVE_SOURCE_PATH + '/',
+            #                 MOVE_TARGET_PATH
+            #             ],
+            #             stdout=null,
+            #             stderr=log_file
+            #         )
 
             log('  Putting the catalog in the database...')
             put_catalog_in_db()

@@ -1,0 +1,55 @@
+version: "3"
+
+services:
+  nginx:
+    restart: always
+    build: ./nginx
+    image: nginx
+    networks:
+      - main
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - web-static:/www/static
+      - web-media:/www/media
+      - web-certs:/etc/nginx/ssl/certs/
+    environment:
+      - host=library
+  postgres:
+    restart: always
+    image: postgres:latest
+    networks:
+      - main
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+    env_file: postgres.env
+
+  library:
+    restart: always
+    build: .
+    image: library
+    expose:
+      - "8000"
+    networks:
+      - main
+    volumes:
+      - web-static:/usr/src/app/static
+      - web-media:/usr/src/app/media
+    env_file: .env
+    environment:
+      - DEBUG=true
+    depends_on:
+      - "postgres"
+    command: ["web"]
+
+networks:
+  main:
+
+volumes:
+  pgdata:
+  web-static:
+  web-media:
+  web-certs:

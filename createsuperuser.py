@@ -3,6 +3,8 @@ from django.contrib.auth.management.commands.createsuperuser import get_user_mod
 import django
 import os
 
+DEBUG = os.getenv('DEBUG', 'NO').lower() in ('on', 'true', 'y', 'yes')
+os.environ['DJANGO_SETTINGS_MODULE'] = 'gutendex.settings'
 
 
 django.setup()

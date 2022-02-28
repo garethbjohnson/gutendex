@@ -11,6 +11,5 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 COPY . .
-RUN mv wait-for /bin/wait-for
 EXPOSE 8000
 ENTRYPOINT ["./entrypoint.sh"]
