@@ -22,7 +22,7 @@ services:
     networks:
       - main
     ports:
-      - "5432:5432"
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data/
     env_file: postgres.env
