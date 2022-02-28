@@ -29,21 +29,21 @@ services:
 
   library:
     restart: always
-    build: .
+    build: ../
     image: library
     expose:
       - "8000"
     networks:
       - main
     volumes:
-      - web-static:/usr/src/app/static
+      - web-static:${STATIC_ROOT}
       - web-media:/usr/src/app/media
     env_file: .env
     environment:
       - DEBUG=true
     depends_on:
       - "postgres"
-    command: ["web"]
+    command: ["web", "${POPUlATE_ON_START}"]
 
 networks:
   main:

@@ -14,20 +14,20 @@ services:
 
   library:
     restart: always
-    build: .
+    build: ../
     image: library
     ports:
       - "8000:8000"
     networks:
       - main
     volumes:
-      - .:/usr/src/app/
+      - ../:/usr/src/app/
     env_file: .env
     environment:
       - DEBUG=true
     depends_on:
       - "postgres"
-    command: ["dev"]
+    command: ["dev", "${POPUlATE_ON_START}"]
 
 networks:
   main:
