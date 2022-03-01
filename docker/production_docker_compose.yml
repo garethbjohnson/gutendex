@@ -43,7 +43,7 @@ services:
       - DEBUG=true
     depends_on:
       - "postgres"
-    command: ["web", "${POPUlATE_ON_START}"]
+    command: ["web", "${POPULATE_ON_START}"]
 
 networks:
   main:
