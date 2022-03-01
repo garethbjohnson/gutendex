@@ -5,7 +5,7 @@ import shutil
 from time import strftime
 import sys
 import urllib.request
-
+import tarfile
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand, CommandError
@@ -19,22 +19,11 @@ TEMP_PATH = settings.CATALOG_TEMP_DIR
 URL = 'https://gutenberg.org/cache/epub/feeds/rdf-files.tar.bz2'
 DOWNLOAD_PATH = os.path.join(TEMP_PATH, 'catalog.tar.bz2')
 
-MOVE_SOURCE_PATH = os.path.join(TEMP_PATH, 'cache/epub')
-MOVE_TARGET_PATH = settings.CATALOG_RDF_DIR
 
 LOG_DIRECTORY = settings.CATALOG_LOG_DIR
 LOG_FILE_NAME = strftime('%Y-%m-%d_%H%M%S') + '.txt'
 LOG_PATH = os.path.join(LOG_DIRECTORY, LOG_FILE_NAME)
 
-
-# This gives a set of the names of the subdirectories in the given file path.
-def get_directory_set(path):
-    directory_set = set()
-    for directory_item in os.listdir(path):
-        item_path = os.path.join(path, directory_item)
-        if os.path.isdir(item_path):
-            directory_set.add(directory_item)
-    return directory_set
 
 
 def log(*args):
@@ -45,37 +34,31 @@ def log(*args):
         text = ' '.join(args) + '\n'
         log_file.write(text)
 
+def get_id(file):
+    id = file.name.split('/')[2]
+    try:
+        id = int(id)
+    except ValueError:
+        id = None
+    return id
 
-def put_catalog_in_db():
-    book_ids = []
-    for directory_item in os.listdir(settings.CATALOG_RDF_DIR):
-        item_path = os.path.join(settings.CATALOG_RDF_DIR, directory_item)
-        if os.path.isdir(item_path):
-            try:
-                book_id = int(directory_item)
-            except ValueError:
-                # Ignore the item if it's not a book ID number.
-                pass
-            else:
-                book_ids.append(book_id)
-    book_ids.sort()
-    book_directories = [str(id) for id in book_ids]
+def put_catalog_in_db(tar):
+    c = 0
+    for file in tar:
+        if c <= 0:
+            c += 1
+            f = tar.extractfile(file)
+            id = get_id(file)
+            #creates a string of the xml
+            content = f.read().decode('utf-8')
+            print(f"ID == {get_id(file)}")
+            print(content)
+            if (id > 0) and (id % 500 == 0):
+                log('    %d' % id)
 
-    for directory in book_directories:
-        id = int(directory)
-
-        if (id > 0) and (id % 500 == 0):
-            log('    %d' % id)
-
-        book_path = os.path.join(
-            settings.CATALOG_RDF_DIR,
-            directory,
-            'pg' + directory + '.rdf'
-        )
-
-        book = utils.get_book(id, book_path)
-
-        try:
+            book = utils.get_book(id, content)
+            print(book)
+            # try:
             ''' Make/update the book. '''
 
             book_in_db = Book.objects.filter(gutenberg_id=id)
@@ -98,64 +81,37 @@ def put_catalog_in_db():
 
             ''' Make/update the authors. '''
 
-            authors = []
+            book_in_db.authors.clear()
             for author in book['authors']:
-                person = Person.objects.filter(
+                person = Person.objects.get_or_create(
                     name=author['name'],
                     birth_year=author['birth'],
                     death_year=author['death']
-                )
-                if person.exists():
-                    person = person[0]
-                else:
-                    person = Person.objects.create(
-                        name=author['name'],
-                        birth_year=author['birth'],
-                        death_year=author['death']
-                    )
-                authors.append(person)
+                )[0].id
+                book_in_db.authors.add(person)
 
-            book_in_db.authors.clear()
-            for author in authors:
-                book_in_db.authors.add(author)
+                
 
             ''' Make/update the translators. '''
-
-            translators = []
+            book_in_db.translators.clear()
             for translator in book['translators']:
-                person = Person.objects.filter(
+                person = Person.objects.get_or_create(
                     name=translator['name'],
                     birth_year=translator['birth'],
                     death_year=translator['death']
-                )
-                if person.exists():
-                    person = person[0]
-                else:
-                    person = Person.objects.create(
-                        name=translator['name'],
-                        birth_year=translator['birth'],
-                        death_year=translator['death']
-                    )
-                translators.append(person)
+                )[0].id
+                book_in_db.translators.add(person)
 
-            book_in_db.translators.clear()
-            for translator in translators:
-                book_in_db.translators.add(translator)
 
+                
             ''' Make/update the book shelves. '''
 
-            bookshelves = []
-            for shelf in book['bookshelves']:
-                shelf_in_db = Bookshelf.objects.filter(name=shelf)
-                if shelf_in_db.exists():
-                    shelf_in_db = shelf_in_db[0]
-                else:
-                    shelf_in_db = Bookshelf.objects.create(name=shelf)
-                bookshelves.append(shelf_in_db)
 
             book_in_db.bookshelves.clear()
-            for bookshelf in bookshelves:
-                book_in_db.bookshelves.add(bookshelf)
+            for shelf in book['bookshelves']:
+                shelf_in_db = Bookshelf.objects.get_or_create(name=shelf)[0].id
+                book_in_db.bookshelves.add(shelf_in_db)
+
 
             ''' Make/update the formats. '''
 
@@ -163,63 +119,40 @@ def put_catalog_in_db():
 
             format_ids = []
             for format_ in book['formats']:
-                format_in_db = Format.objects.filter(
+                format_in_db = Format.objects.get_or_create(
                     book=book_in_db,
                     mime_type=format_,
                     url=book['formats'][format_]
-                )
-                if format_in_db.exists():
-                    format_in_db = format_in_db[0]
-                else:
-                    format_in_db = Format.objects.create(
-                        book=book_in_db,
-                        mime_type=format_,
-                        url=book['formats'][format_]
-                    )
-                format_ids.append(format_in_db.id)
+                )[0].id
+                book_in_db.format.add(format_in_db)
+                format_ids.append(format_in_db)
 
             for old_format in old_formats:
                 if old_format.id not in format_ids:
                     old_format.delete()
 
             ''' Make/update the languages. '''
-
-            languages = []
-            for language in book['languages']:
-                language_in_db = Language.objects.filter(code=language)
-                if language_in_db.exists():
-                    language_in_db = language_in_db[0]
-                else:
-                    language_in_db = Language.objects.create(code=language)
-                languages.append(language_in_db)
-
             book_in_db.languages.clear()
-            for language in languages:
-                book_in_db.languages.add(language)
+            for language in book['languages']:
+                language_in_db = Language.objects.get_or_create(code=language)[0].id
+                book_in_db.languages.add(language_in_db)
+
 
             ''' Make/update subjects. '''
 
-            subjects = []
-            for subject in book['subjects']:
-                subject_in_db = Subject.objects.filter(name=subject)
-                if subject_in_db.exists():
-                    subject_in_db = subject_in_db[0]
-                else:
-                    subject_in_db = Subject.objects.create(name=subject)
-                subjects.append(subject_in_db)
-
             book_in_db.subjects.clear()
-            for subject in subjects:
-                book_in_db.subjects.add(subject)
+            for subject in book['subjects']:
+                subject_in_db = Subject.objects.get_or_create(name=subject)[0].id
+                book_in_db.subjects.add(subject_in_db)
 
-        except Exception as error:
-            book_json = json.dumps(book, indent=4)
-            log(
-                '  Error while putting this book info in the database:\n',
-                book_json,
-                '\n'
-            )
-            raise error
+            # except Exception as error:
+            #     book_json = json.dumps(book, indent=4)
+            #     log(
+            #         '  Error while putting this book info in the database:\n',
+            #         book_json,
+            #         '\n'
+            #     )
+            #     raise error
 
 
 def send_log_email():
@@ -264,82 +197,55 @@ def send_log_email():
         from_email=settings.EMAIL_HOST_ADDRESS,
         recipient_list=settings.ADMIN_EMAILS
     )
+#todo
+# def detect_stale_entries():
+#     log('  Detecting stale directories...')
+#     if not os.path.exists(MOVE_TARGET_PATH):
+#         os.makedirs(MOVE_TARGET_PATH)
+#     new_directory_set = get_directory_set(MOVE_SOURCE_PATH)
+#     old_directory_set = get_directory_set(MOVE_TARGET_PATH)
+#     stale_directory_set = old_directory_set - new_directory_set
 
-
+#     log('  Removing stale directories and books...')
+#     for directory in stale_directory_set:
+#         try:
+#             book_id = int(directory)
+#         except ValueError:
+#             # Ignore the directory if its name isn't a book ID number.
+#             continue
+#         book = Book.objects.filter(gutenberg_id=book_id)
+#         book.delete()
+#         path = os.path.join(MOVE_TARGET_PATH, directory)
+#         shutil.rmtree(path)
 class Command(BaseCommand):
     help = 'This replaces the catalog files with the latest ones.'
 
     def handle(self, *args, **options):
-        try:
-            date_and_time = strftime('%H:%M:%S on %B %d, %Y')
-            log('Starting script at', date_and_time)
+        # try:
+        date_and_time = strftime('%H:%M:%S on %B %d, %Y')
+        log('Starting script at', date_and_time)
 
-            log('  Making temporary directory...')
-            if os.path.exists(TEMP_PATH):
-                raise CommandError(
-                    'The temporary path, `' + TEMP_PATH + '`, already exists.'
-                )
-            else:
-                os.makedirs(TEMP_PATH)
+        log('  Making temporary directory...')
+        os.makedirs(TEMP_PATH, exist_ok=True)
 
-            log('  Downloading compressed catalog...')
-            urllib.request.urlretrieve(URL, DOWNLOAD_PATH)
+        log('  Downloading compressed catalog...')
+        urllib.request.urlretrieve(URL, DOWNLOAD_PATH)
 
-            log('  Decompressing catalog...')
-            if not os.path.exists(DOWNLOAD_PATH):
-                os.makedirs(DOWNLOAD_PATH)
-            with open(os.devnull, 'w') as null:
-                call(
-                    ['tar', 'fjvx', DOWNLOAD_PATH, '-C', TEMP_PATH],
-                    stdout=null,
-                    stderr=null
-                )
+        log('  Reading catalog...')
 
-            log('  Detecting stale directories...')
-            if not os.path.exists(MOVE_TARGET_PATH):
-                os.makedirs(MOVE_TARGET_PATH)
-            new_directory_set = get_directory_set(MOVE_SOURCE_PATH)
-            old_directory_set = get_directory_set(MOVE_TARGET_PATH)
-            stale_directory_set = old_directory_set - new_directory_set
+        tar = tarfile.open(DOWNLOAD_PATH, 'r:bz2')
+        
+        log('  Putting the catalog in the database...')
+        put_catalog_in_db(tar)
+    
+        log('  Removing temporary files...')
+        shutil.rmtree(TEMP_PATH)
 
-            log('  Removing stale directories and books...')
-            for directory in stale_directory_set:
-                try:
-                    book_id = int(directory)
-                except ValueError:
-                    # Ignore the directory if its name isn't a book ID number.
-                    continue
-                book = Book.objects.filter(gutenberg_id=book_id)
-                book.delete()
-                path = os.path.join(MOVE_TARGET_PATH, directory)
-                shutil.rmtree(path)
+        log('Done!\n')
+        # except Exception as error:
+        #     error_message = str(error)
+        #     log('Error:', error_message)
+        #     log('')
+        #     shutil.rmtree(TEMP_PATH)
 
-            log('  Replacing old catalog files...')
-            with open(os.devnull, 'w') as null:
-                with open(LOG_PATH, 'a') as log_file:
-                    call(
-                        [
-                            'rsync',
-                            '-va',
-                            '--delete-after',
-                            MOVE_SOURCE_PATH + '/',
-                            MOVE_TARGET_PATH
-                        ],
-                        stdout=null,
-                        stderr=log_file
-                    )
-
-            log('  Putting the catalog in the database...')
-            put_catalog_in_db()
-
-            log('  Removing temporary files...')
-            shutil.rmtree(TEMP_PATH)
-
-            log('Done!\n')
-        except Exception as error:
-            error_message = str(error)
-            log('Error:', error_message)
-            log('')
-            shutil.rmtree(TEMP_PATH)
-
-        send_log_email()
+        # # send_log_email()

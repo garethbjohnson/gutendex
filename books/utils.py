@@ -27,18 +27,16 @@ def fix_subtitles(title):
     return LINE_BREAK_PATTERN.sub('; ', new_title)
 
 
-def get_book(id, xml_file_path):
+def get_book(id, xml_string):
     """ Based on https://gist.github.com/andreasvc/b3b4189120d84dec8857 """
 
     # Parse the XML.
-    document = None
     try:
-        document = parser.parse(xml_file_path)
+        root = parser.fromstring(xml_string)
     except:
         raise Exception('The XML file could not be parsed.')
 
     # Get the book node.
-    root = document.getroot()
     book = root.find('{%(pg)s}ebook' % NAMESPACES)
 
     result = {
