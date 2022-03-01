@@ -5,7 +5,7 @@ django-environ==0.8.1
 djangorestframework==3.13.1
 gunicorn==20.0.4
 inflection==0.5.1
-psycopg2==2.9.3
+psycopg2==2.8.6
 pytz==2021.3
 six==1.16.0
 sqlparse==0.4.2
