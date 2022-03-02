@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  postgres:
+    restart: always
+    image: postgres:latest
+    networks:
+      - main
+    ports:
+      - "5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+    env_file: postgres.env
+
+  library:
+    restart: always
+    build: ../
+    image: library
+    ports:
+      - "8000:8000"
+    networks:
+      - main
+    volumes:
+      - ../:/usr/src/app/
+    env_file: .env
+    environment:
+      - DEBUG=true
+    depends_on:
+      - "postgres"
+    command: ["dev", "${POPULATE_ON_START}"]
+
+networks:
+  main:
+
+volumes:
+  pgdata:
+

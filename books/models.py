@@ -4,7 +4,7 @@ from django.db import models
 class Book(models.Model):
     authors = models.ManyToManyField('Person')
     bookshelves = models.ManyToManyField('Bookshelf')
-    copyright = models.NullBooleanField()
+    copyright = models.BooleanField(default=True)
     download_count = models.PositiveIntegerField(blank=True, null=True)
     gutenberg_id = models.PositiveIntegerField(unique=True)
     languages = models.ManyToManyField('Language')
