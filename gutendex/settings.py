@@ -178,8 +178,8 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 
 # Directory paths for catalog files and updater
 BASE_CATALOG_DIR = os.path.join(BASE_DIR, 'catalog_files')
-CATALOG_RDF_DIR = os.path.join(BASE_CATALOG_DIR, 'rdf')
-CATALOG_INDEX_DIR = os.path.join(CATALOG_RDF_DIR, 'index.json')
+# CATALOG_RDF_DIR = os.path.join(BASE_CATALOG_DIR, 'rdf')
+# CATALOG_INDEX_DIR = os.path.join(CATALOG_RDF_DIR, 'index.json')
 CATALOG_LOG_DIR = os.path.join(BASE_CATALOG_DIR, 'log')
 CATALOG_TEMP_DIR = os.path.join(BASE_CATALOG_DIR, 'tmp')
 
