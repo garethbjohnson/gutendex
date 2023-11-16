@@ -1,7 +1,7 @@
-Django==2.2.28
+Django==3.2.23
 django-cors-headers==3.1.1
 django-environ==0.4.5
 djangorestframework==3.11.2
 inflection==0.3.1
-psycopg2==2.7.1
+psycopg2-binary==2.9.9
 six==1.15.0

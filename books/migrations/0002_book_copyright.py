@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='book',
             name='copyright',
-            field=models.NullBooleanField(),
+            field=models.BooleanField(null=True),
         ),
     ]
