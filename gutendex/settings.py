@@ -200,4 +200,4 @@ REST_FRAMEWORK = {
 
 
 # Cross-origin resource sharing with `corsheaders` middleware
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
