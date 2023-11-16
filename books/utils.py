@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as parser
+import defusedxml.ElementTree as parser
 import re
 
 
