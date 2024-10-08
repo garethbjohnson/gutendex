@@ -1,5 +1,5 @@
 defusedxml==0.7.1
-Django==4.2.15
+Django==4.2.16
 django-cors-headers==4.3.1
 django-environ==0.11.2
 djangorestframework==3.15.2
