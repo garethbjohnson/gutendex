@@ -45,6 +45,7 @@ def get_book(id, xml_file_path):
         'id': int(id),
         'title': None,
         'authors': [],
+        'summaries': [],
         'translators': [],
         'type': None,
         'subjects': [],
@@ -151,6 +152,10 @@ def get_book(id, xml_file_path):
     download_count = book.find('.//{%(pg)s}downloads' % NAMESPACES)
     if download_count is not None:
         result['downloads'] = int(download_count.text)
+    
+    # Summary
+    summaries = book.findall('.//{%(pg)s}marc520' % NAMESPACES)
+    result['summaries'] = [summary.text for summary in summaries]
 
     return result
 

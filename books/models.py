@@ -23,6 +23,9 @@ class Book(models.Model):
     def get_formats(self):
         return Format.objects.filter(book_id=self.id)
 
+    def get_summaries(self):
+        return Summary.objects.filter(book_id=self.id)
+
 
 class Bookshelf(models.Model):
     name = models.CharField(max_length=64, unique=True)
@@ -64,3 +67,12 @@ class Subject(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Summary(models.Model):
+    book = models.ForeignKey('Book', on_delete=models.CASCADE)
+    text = models.TextField()
+
+    def __str__(self):
+        preview_len = 24
+        return f'{self.text[:preview_len]}...' if len(self.text) > preview_len else self.text

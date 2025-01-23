@@ -33,6 +33,12 @@ class SubjectSerializer(serializers.ModelSerializer):
         fields = ('name',)
 
 
+class SummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Summary
+        fields = ('book', 'text')
+
+
 class BookSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     authors = PersonSerializer(many=True)
@@ -40,6 +46,7 @@ class BookSerializer(serializers.ModelSerializer):
     formats = serializers.SerializerMethodField()
     languages = serializers.SerializerMethodField()
     subjects = serializers.SerializerMethodField()
+    summaries = serializers.SerializerMethodField()
     translators = PersonSerializer(many=True)
 
     lookup_field = 'gutenberg_id'
@@ -50,6 +57,7 @@ class BookSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'authors',
+            'summaries',
             'translators',
             'subjects',
             'bookshelves',
@@ -80,3 +88,8 @@ class BookSerializer(serializers.ModelSerializer):
         subjects = [subject.name for subject in book.subjects.all()]
         subjects.sort()
         return subjects
+
+    def get_summaries(self, book):
+        summaries = [summary.text for summary in book.get_summaries()]
+        summaries.sort()
+        return summaries

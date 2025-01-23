@@ -147,6 +147,7 @@ Types of JSON objects served by Gutendex are given below.
   "id": <number of Project Gutenberg ID>,
   "title": <string>,
   "authors": <array of Persons>,
+  "summaries": <array of strings>,
   "translators": <array of Persons>,
   "subjects": <array of strings>,
   "bookshelves": <array of strings>,

@@ -76,7 +76,7 @@ def put_catalog_in_db():
         book = utils.get_book(id, book_path)
 
         try:
-            ''' Make/update the book. '''
+            '''Make/update the book.'''
 
             book_in_db = Book.objects.filter(gutenberg_id=id)
 
@@ -211,6 +211,25 @@ def put_catalog_in_db():
             book_in_db.subjects.clear()
             for subject in subjects:
                 book_in_db.subjects.add(subject)
+
+            ''' Make/update summaries. '''
+
+            old_summaries = Summary.objects.filter(book=book_in_db)
+
+            summary_ids = []
+            for summary in book['summaries']:
+                summary_in_db = Summary.objects.filter(book=book_in_db, text=summary)
+                if summary_in_db.exists():
+                    summary_in_db = summary_in_db[0]
+                else:
+                    summary_in_db = Summary.objects.create(
+                        book=book_in_db, text=summary
+                    ) 
+                summary_ids.append(summary_in_db.id)
+
+            for old_summary in old_summaries:
+                if old_summary.id not in summary_ids:
+                    old_summary.delete()
 
         except Exception as error:
             book_json = json.dumps(book, indent=4)
