@@ -100,42 +100,29 @@ def put_catalog_in_db():
 
             authors = []
             for author in book['authors']:
-                person = Person.objects.filter(
-                    name=author['name'],
-                    birth_year=author['birth'],
-                    death_year=author['death']
-                )
-                if person.exists():
-                    person = person[0]
-                else:
-                    person = Person.objects.create(
-                        name=author['name'],
-                        birth_year=author['birth'],
-                        death_year=author['death']
-                    )
+                person = get_or_create_person(author)
                 authors.append(person)
 
             book_in_db.authors.clear()
             for author in authors:
                 book_in_db.authors.add(author)
 
+            ''' Make/update the editors. '''
+
+            editors = []
+            for editor in book['editors']:
+                person = get_or_create_person(editor)
+                editors.append(person)
+
+            book_in_db.editors.clear()
+            for editor in editors:
+                book_in_db.editors.add(editor)
+
             ''' Make/update the translators. '''
 
             translators = []
             for translator in book['translators']:
-                person = Person.objects.filter(
-                    name=translator['name'],
-                    birth_year=translator['birth'],
-                    death_year=translator['death']
-                )
-                if person.exists():
-                    person = person[0]
-                else:
-                    person = Person.objects.create(
-                        name=translator['name'],
-                        birth_year=translator['birth'],
-                        death_year=translator['death']
-                    )
+                person = get_or_create_person(translator)
                 translators.append(person)
 
             book_in_db.translators.clear()
@@ -239,6 +226,25 @@ def put_catalog_in_db():
                 '\n'
             )
             raise error
+
+
+def get_or_create_person(data):
+    person = Person.objects.filter(
+        name=data['name'],
+        birth_year=data['birth'],
+        death_year=data['death']
+    )
+
+    if person.exists():
+        person = person[0]
+    else:
+        person = Person.objects.create(
+            name=data['name'],
+            birth_year=data['birth'],
+            death_year=data['death']
+        )
+    
+    return person
 
 
 def send_log_email():

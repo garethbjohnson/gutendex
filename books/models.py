@@ -6,6 +6,7 @@ class Book(models.Model):
     bookshelves = models.ManyToManyField('Bookshelf')
     copyright = models.BooleanField(null=True)
     download_count = models.PositiveIntegerField(blank=True, null=True)
+    editors = models.ManyToManyField("Person", related_name="books_edited")
     gutenberg_id = models.PositiveIntegerField(unique=True)
     languages = models.ManyToManyField('Language')
     media_type = models.CharField(max_length=16)

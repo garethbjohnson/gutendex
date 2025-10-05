@@ -46,6 +46,7 @@ def get_book(id, xml_file_path):
         'title': None,
         'authors': [],
         'summaries': [],
+        'editors': [],
         'translators': [],
         'type': None,
         'subjects': [],
@@ -59,34 +60,23 @@ def get_book(id, xml_file_path):
     # Authors
     creators = book.findall('.//{%(dc)s}creator' % NAMESPACES)
     for creator in creators:
-        author = {'birth': None, 'death': None}
-        name = creator.find('.//{%(pg)s}name' % NAMESPACES)
-        if name is None:
-            continue
-        author['name'] = safe_unicode(name.text, encoding='UTF-8')
-        birth = creator.find('.//{%(pg)s}birthdate' % NAMESPACES)
-        if birth is not None:
-            author['birth'] = int(birth.text)
-        death = creator.find('.//{%(pg)s}deathdate' % NAMESPACES)
-        if death is not None:
-            author['death'] = int(death.text)
-        result['authors'] += [author]
+        author = get_person(creator)
+        if author is not None:
+            result['authors'] += [author]
+
+    # Editors
+    editor_elements = book.findall('.//{%(marcrel)s}edt' % NAMESPACES)
+    for editor_element in editor_elements:
+        editor = get_person(editor_element)
+        if editor is not None:
+            result['editors'] += [editor]
 
     # Translators
     translator_elements = book.findall('.//{%(marcrel)s}trl' % NAMESPACES)
     for translator_element in translator_elements:
-        translator = {'birth': None, 'death': None}
-        name = translator_element.find('.//{%(pg)s}name' % NAMESPACES)
-        if name is None:
-            continue
-        translator['name'] = safe_unicode(name.text, encoding='UTF-8')
-        birth = translator_element.find('.//{%(pg)s}birthdate' % NAMESPACES)
-        if birth is not None:
-            translator['birth'] = int(birth.text)
-        death = translator_element.find('.//{%(pg)s}deathdate' % NAMESPACES)
-        if death is not None:
-            translator['death'] = int(death.text)
-        result['translators'] += [translator]
+        translator = get_person(translator_element)
+        if translator is not None:
+            result['translators'] += [translator]
 
     # Title
     title = book.find('.//{%(dc)s}title' % NAMESPACES)
@@ -158,6 +148,31 @@ def get_book(id, xml_file_path):
     result['summaries'] = [summary.text for summary in summaries]
 
     return result
+
+
+def get_person(person_element):
+    name = person_element.find('.//{%(pg)s}name' % NAMESPACES)
+
+    if name is None:
+        return None
+
+    person = {
+        'birth': None,
+        'death': None,
+        'name': safe_unicode(name.text, encoding='UTF-8'),
+    }
+
+    birth = person_element.find('.//{%(pg)s}birthdate' % NAMESPACES)
+
+    if birth is not None:
+        person['birth'] = int(birth.text)
+
+    death = person_element.find('.//{%(pg)s}deathdate' % NAMESPACES)
+
+    if death is not None:
+        person['death'] = int(death.text)
+
+    return person
 
 
 def safe_unicode(arg, *args, **kwargs):

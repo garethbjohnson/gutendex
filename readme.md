@@ -148,6 +148,7 @@ Types of JSON objects served by Gutendex are given below.
   "title": <string>,
   "authors": <array of Persons>,
   "summaries": <array of strings>,
+  "editors": <array of Persons>,
   "translators": <array of Persons>,
   "subjects": <array of strings>,
   "bookshelves": <array of strings>,

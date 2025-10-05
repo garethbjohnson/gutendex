@@ -42,6 +42,7 @@ class SummarySerializer(serializers.ModelSerializer):
 class BookSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     authors = PersonSerializer(many=True)
+    editors = PersonSerializer(many=True)
     bookshelves = serializers.SerializerMethodField()
     formats = serializers.SerializerMethodField()
     languages = serializers.SerializerMethodField()
@@ -58,6 +59,7 @@ class BookSerializer(serializers.ModelSerializer):
             'title',
             'authors',
             'summaries',
+            'editors',
             'translators',
             'subjects',
             'bookshelves',
