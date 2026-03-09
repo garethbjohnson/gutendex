@@ -14,6 +14,8 @@ class Book(models.Model):
     title = models.CharField(blank=True, max_length=1024, null=True)
     published_year = models.SmallIntegerField(null=True, blank=True)
     wikipedia_url = models.URLField(max_length=512, blank=True, default='')
+    reading_score = models.CharField(max_length=256, blank=True, default='')
+    reading_score_value = models.FloatField(null=True, blank=True)
     translators = models.ManyToManyField(
         'Person', related_name='books_translated')
 

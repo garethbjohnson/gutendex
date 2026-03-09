@@ -57,6 +57,8 @@ def get_book(id, xml_file_path):
         'copyright': None,
         'published_year': None,
         'wikipedia_url': '',
+        'reading_score': '',
+        'reading_score_value': None,
     }
 
     # Authors
@@ -164,6 +166,17 @@ def get_book(id, xml_file_path):
             if m:
                 result['wikipedia_url'] = m.group(0)
                 break
+
+    # Reading ease (pgterms:marc908) — e.g. "Reading ease score: 78.7 (7th grade). Fairly easy to read."
+    marc908_el = book.find('.//{%(pg)s}marc908' % NAMESPACES)
+    if marc908_el is not None and marc908_el.text:
+        result['reading_score'] = marc908_el.text
+        m = re.search(r'Reading ease score:\s*([\d.]+)', marc908_el.text)
+        if m:
+            try:
+                result['reading_score_value'] = float(m.group(1))
+            except ValueError:
+                pass
 
     return result
 

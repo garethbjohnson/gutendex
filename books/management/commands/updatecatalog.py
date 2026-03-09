@@ -88,6 +88,8 @@ def put_catalog_in_db():
                 book_in_db.title = book['title']
                 book_in_db.published_year = book['published_year']
                 book_in_db.wikipedia_url = book['wikipedia_url']
+                book_in_db.reading_score = book['reading_score']
+                book_in_db.reading_score_value = book['reading_score_value']
                 book_in_db.save()
             else:
                 book_in_db = Book.objects.create(
@@ -98,6 +100,8 @@ def put_catalog_in_db():
                     title=book['title'],
                     published_year=book['published_year'],
                     wikipedia_url=book['wikipedia_url'],
+                    reading_score=book['reading_score'],
+                    reading_score_value=book['reading_score_value'],
                 )
 
             ''' Make/update the authors. '''
