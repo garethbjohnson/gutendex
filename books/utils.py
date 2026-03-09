@@ -54,7 +54,9 @@ def get_book(id, xml_file_path):
         'formats': {},
         'downloads': None,
         'bookshelves': [],
-        'copyright': None
+        'copyright': None,
+        'published_year': None,
+        'wikipedia_url': '',
     }
 
     # Authors
@@ -146,6 +148,22 @@ def get_book(id, xml_file_path):
     # Summary
     summaries = book.findall('.//{%(pg)s}marc520' % NAMESPACES)
     result['summaries'] = [summary.text for summary in summaries]
+
+    # Published year (dcterms:issued → YYYY-MM-DD → int year)
+    issued = book.find('.//{%(dc)s}issued' % NAMESPACES)
+    if issued is not None and issued.text:
+        try:
+            result['published_year'] = int(issued.text[:4])
+        except (ValueError, TypeError):
+            pass
+
+    # Wikipedia URL (from dcterms:description)
+    for desc in book.findall('.//{%(dc)s}description' % NAMESPACES):
+        if desc.text:
+            m = re.search(r'https?://[^\s]*wikipedia\.org[^\s]*', desc.text)
+            if m:
+                result['wikipedia_url'] = m.group(0)
+                break
 
     return result
 

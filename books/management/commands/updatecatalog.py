@@ -86,6 +86,8 @@ def put_catalog_in_db():
                 book_in_db.download_count = book['downloads']
                 book_in_db.media_type = book['type']
                 book_in_db.title = book['title']
+                book_in_db.published_year = book['published_year']
+                book_in_db.wikipedia_url = book['wikipedia_url']
                 book_in_db.save()
             else:
                 book_in_db = Book.objects.create(
@@ -93,7 +95,9 @@ def put_catalog_in_db():
                     copyright=book['copyright'],
                     download_count=book['downloads'],
                     media_type=book['type'],
-                    title=book['title']
+                    title=book['title'],
+                    published_year=book['published_year'],
+                    wikipedia_url=book['wikipedia_url'],
                 )
 
             ''' Make/update the authors. '''

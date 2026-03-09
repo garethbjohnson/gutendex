@@ -12,6 +12,8 @@ class Book(models.Model):
     media_type = models.CharField(max_length=16)
     subjects = models.ManyToManyField('Subject')
     title = models.CharField(blank=True, max_length=1024, null=True)
+    published_year = models.SmallIntegerField(null=True, blank=True)
+    wikipedia_url = models.URLField(max_length=512, blank=True, default='')
     translators = models.ManyToManyField(
         'Person', related_name='books_translated')
 
