@@ -61,6 +61,7 @@ class Language(models.Model):
 class Person(models.Model):
     birth_year = models.SmallIntegerField(blank=True, null=True)
     death_year = models.SmallIntegerField(blank=True, null=True)
+    gutenberg_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
     name = models.CharField(max_length=128)
 
     def __str__(self):

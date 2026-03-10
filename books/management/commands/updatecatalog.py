@@ -237,21 +237,28 @@ def put_catalog_in_db():
 
 
 def get_or_create_person(data):
-    person = Person.objects.filter(
-        name=data['name'],
-        birth_year=data['birth'],
-        death_year=data['death']
-    )
-
-    if person.exists():
-        person = person[0]
-    else:
-        person = Person.objects.create(
+    gid = data.get('gutenberg_id')
+    if gid:
+        person = Person.objects.filter(gutenberg_id=gid).first()
+        if person:
+            Person.objects.filter(pk=person.pk).update(
+                name=data['name'],
+                birth_year=data['birth'],
+                death_year=data['death'],
+            )
+            return person
+        return Person.objects.create(
+            gutenberg_id=gid,
             name=data['name'],
             birth_year=data['birth'],
-            death_year=data['death']
+            death_year=data['death'],
         )
-    
+    # Fallback: no agent ID in RDF (rare)
+    person, _ = Person.objects.get_or_create(
+        name=data['name'],
+        birth_year=data['birth'],
+        death_year=data['death'],
+    )
     return person
 
 

@@ -187,7 +187,17 @@ def get_person(person_element):
     if name is None:
         return None
 
+    # Extract Gutenberg agent ID from rdf:about on the pg:agent child element
+    gutenberg_id = None
+    agent_el = person_element.find('{%(pg)s}agent' % NAMESPACES)
+    if agent_el is not None:
+        about = agent_el.get('{%(rdf)s}about' % NAMESPACES, '')
+        m = re.search(r'(\d+)$', about)  # "2009/agents/37" → 37
+        if m:
+            gutenberg_id = int(m.group(1))
+
     person = {
+        'gutenberg_id': gutenberg_id,
         'birth': None,
         'death': None,
         'name': safe_unicode(name.text, encoding='UTF-8'),
