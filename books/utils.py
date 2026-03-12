@@ -3,6 +3,11 @@ import re
 
 
 LINE_BREAK_PATTERN = re.compile(r'[ \t]*[\n\r]+[ \t]*')
+RELATED_BOOK_RE = re.compile(
+    r'gutenberg\.org/ebooks/(\d+)'
+    r'|[Ee][Bb]ook\s*#\s*(\d+)'
+    r'|(?<!\w)#(\d+)'
+)
 NAMESPACES = {
     'dc': 'http://purl.org/dc/terms/',
     'dcam': 'http://purl.org/dc/dcam/',
@@ -59,6 +64,7 @@ def get_book(id, xml_file_path):
         'wikipedia_url': '',
         'reading_score': '',
         'reading_score_value': None,
+        'related_books': [],
     }
 
     # Authors
@@ -166,6 +172,16 @@ def get_book(id, xml_file_path):
             if m:
                 result['wikipedia_url'] = m.group(0)
                 break
+
+    # Related books (cross-references in dcterms:description)
+    seen_ids = set()
+    for desc in book.findall('.//{%(dc)s}description' % NAMESPACES):
+        if desc.text:
+            for m in RELATED_BOOK_RE.finditer(desc.text):
+                raw_id = int(m.group(1) or m.group(2) or m.group(3))
+                if raw_id != int(id):
+                    seen_ids.add(raw_id)
+    result['related_books'] = sorted(seen_ids)
 
     # Reading ease (pgterms:marc908) — e.g. "Reading ease score: 78.7 (7th grade). Fairly easy to read."
     marc908_el = book.find('.//{%(pg)s}marc908' % NAMESPACES)
