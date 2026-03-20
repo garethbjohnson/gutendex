@@ -26,7 +26,7 @@ LOG_DIRECTORY = settings.CATALOG_LOG_DIR
 LOG_FILE_NAME = strftime('%Y-%m-%d_%H%M%S') + '.txt'
 LOG_PATH = os.path.join(LOG_DIRECTORY, LOG_FILE_NAME)
 
-CACHE_PATH = os.path.join(settings.CATALOG_RDF_DIR, 'rdf_stat_cache.json')
+CACHE_PATH = os.path.join(os.path.dirname(settings.CATALOG_RDF_DIR), 'rdf_stat_cache.json')
 
 
 # This gives a set of the names of the subdirectories in the given file path.
@@ -68,6 +68,8 @@ def save_stat_cache(cache):
         with open(tmp, 'w') as f:
             json.dump(cache, f, separators=(',', ':'))
         os.replace(tmp, CACHE_PATH)
+        size_kb = os.path.getsize(CACHE_PATH) / 1024
+        log('  Stat cache saved: %s (%.1f KB)' % (CACHE_PATH, size_kb))
     except Exception as e:
         log('  Warning: stat cache could not be saved (%s).' % e)
         try:
