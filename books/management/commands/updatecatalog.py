@@ -26,6 +26,8 @@ LOG_DIRECTORY = settings.CATALOG_LOG_DIR
 LOG_FILE_NAME = strftime('%Y-%m-%d_%H%M%S') + '.txt'
 LOG_PATH = os.path.join(LOG_DIRECTORY, LOG_FILE_NAME)
 
+CACHE_PATH = os.path.join(settings.CATALOG_RDF_DIR, 'rdf_stat_cache.json')
+
 
 # This gives a set of the names of the subdirectories in the given file path.
 def get_directory_set(path):
@@ -46,7 +48,35 @@ def log(*args):
         log_file.write(text)
 
 
-def put_catalog_in_db():
+def load_stat_cache():
+    if not os.path.exists(CACHE_PATH):
+        return {}
+    try:
+        with open(CACHE_PATH, 'r') as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError('Cache root must be a JSON object')
+        return data
+    except Exception as e:
+        log('  Warning: stat cache unreadable (%s); starting fresh.' % e)
+        return {}
+
+
+def save_stat_cache(cache):
+    tmp = CACHE_PATH + '.tmp'
+    try:
+        with open(tmp, 'w') as f:
+            json.dump(cache, f, separators=(',', ':'))
+        os.replace(tmp, CACHE_PATH)
+    except Exception as e:
+        log('  Warning: stat cache could not be saved (%s).' % e)
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+
+def put_catalog_in_db(stat_cache):
     book_ids = []
     for directory_item in os.listdir(settings.CATALOG_RDF_DIR):
         item_path = os.path.join(settings.CATALOG_RDF_DIR, directory_item)
@@ -61,6 +91,9 @@ def put_catalog_in_db():
     book_ids.sort()
     book_directories = [str(id) for id in book_ids]
 
+    skipped = 0
+    processed = 0
+
     for directory in book_directories:
         id = int(directory)
 
@@ -72,6 +105,12 @@ def put_catalog_in_db():
             directory,
             'pg' + directory + '.rdf'
         )
+
+        st = os.stat(book_path)
+        cached = stat_cache.get(directory)
+        if cached and cached[0] == st.st_mtime_ns and cached[1] == st.st_size:
+            skipped += 1
+            continue
 
         book = utils.get_book(id, book_path)
 
@@ -227,6 +266,12 @@ def put_catalog_in_db():
             )
             raise error
 
+        stat_cache[directory] = [st.st_mtime_ns, st.st_size]
+        processed += 1
+
+    log('    Skipped (unchanged): %d  Processed: %d' % (skipped, processed))
+    return stat_cache, {str(id) for id in book_ids}
+
 
 def get_or_create_person(data):
     person = Person.objects.filter(
@@ -291,10 +336,54 @@ def send_log_email():
     )
 
 
+def prime_rdf_cache():
+    if not os.path.exists(settings.CATALOG_RDF_DIR):
+        log('  RDF directory does not exist; nothing to prime.')
+        return
+    cache = {}
+    count = 0
+    for directory_item in os.listdir(settings.CATALOG_RDF_DIR):
+        item_path = os.path.join(settings.CATALOG_RDF_DIR, directory_item)
+        if not os.path.isdir(item_path):
+            continue
+        try:
+            int(directory_item)
+        except ValueError:
+            continue
+        rdf_path = os.path.join(item_path, 'pg' + directory_item + '.rdf')
+        try:
+            st = os.stat(rdf_path)
+        except OSError:
+            continue
+        cache[directory_item] = [st.st_mtime_ns, st.st_size]
+        count += 1
+    save_stat_cache(cache)
+    log('  Primed cache with %d files.' % count)
+
+
 class Command(BaseCommand):
     help = 'This replaces the catalog files with the latest ones.'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--prime-rdf-cache',
+            action='store_true',
+            help=(
+                'Scan the existing RDF directory, record each file\'s mtime '
+                'and size into the stat cache, then exit. Use this after '
+                'upgrading from a previous version of gutendex to mark all '
+                'current files as already imported, so the next updatecatalog '
+                'run only processes new or changed files.'
+            ),
+        )
+
     def handle(self, *args, **options):
+        if options['prime_rdf_cache']:
+            log('Priming RDF stat cache...')
+            prime_rdf_cache()
+            log('Done!')
+            return
+
         try:
             date_and_time = strftime('%H:%M:%S on %B %d, %Y')
             log('Starting script at', date_and_time)
@@ -355,7 +444,10 @@ class Command(BaseCommand):
                     )
 
             log('  Putting the catalog in the database...')
-            put_catalog_in_db()
+            stat_cache = load_stat_cache()
+            stat_cache, seen_ids = put_catalog_in_db(stat_cache)
+            stat_cache = {k: v for k, v in stat_cache.items() if k in seen_ids}
+            save_stat_cache(stat_cache)
 
             log('  Removing temporary files...')
             shutil.rmtree(TEMP_PATH)
