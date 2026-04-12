@@ -12,6 +12,11 @@ class Book(models.Model):
     media_type = models.CharField(max_length=16)
     subjects = models.ManyToManyField('Subject')
     title = models.CharField(blank=True, max_length=1024, null=True)
+    published_year = models.SmallIntegerField(null=True, blank=True)
+    wikipedia_url = models.URLField(max_length=512, blank=True, default='')
+    reading_score = models.CharField(max_length=256, blank=True, default='')
+    reading_score_value = models.FloatField(null=True, blank=True)
+    related_books = models.TextField(blank=True, default='')
     translators = models.ManyToManyField(
         'Person', related_name='books_translated')
 
@@ -57,6 +62,7 @@ class Language(models.Model):
 class Person(models.Model):
     birth_year = models.SmallIntegerField(blank=True, null=True)
     death_year = models.SmallIntegerField(blank=True, null=True)
+    gutenberg_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
     name = models.CharField(max_length=128)
 
     def __str__(self):

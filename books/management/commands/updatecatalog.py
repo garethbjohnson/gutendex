@@ -86,6 +86,11 @@ def put_catalog_in_db():
                 book_in_db.download_count = book['downloads']
                 book_in_db.media_type = book['type']
                 book_in_db.title = book['title']
+                book_in_db.published_year = book['published_year']
+                book_in_db.wikipedia_url = book['wikipedia_url']
+                book_in_db.reading_score = book['reading_score']
+                book_in_db.reading_score_value = book['reading_score_value']
+                book_in_db.related_books = ','.join(str(i) for i in book['related_books'])
                 book_in_db.save()
             else:
                 book_in_db = Book.objects.create(
@@ -93,7 +98,12 @@ def put_catalog_in_db():
                     copyright=book['copyright'],
                     download_count=book['downloads'],
                     media_type=book['type'],
-                    title=book['title']
+                    title=book['title'],
+                    published_year=book['published_year'],
+                    wikipedia_url=book['wikipedia_url'],
+                    reading_score=book['reading_score'],
+                    reading_score_value=book['reading_score_value'],
+                    related_books=','.join(str(i) for i in book['related_books']),
                 )
 
             ''' Make/update the authors. '''
@@ -229,21 +239,28 @@ def put_catalog_in_db():
 
 
 def get_or_create_person(data):
-    person = Person.objects.filter(
-        name=data['name'],
-        birth_year=data['birth'],
-        death_year=data['death']
-    )
-
-    if person.exists():
-        person = person[0]
-    else:
-        person = Person.objects.create(
+    gid = data.get('gutenberg_id')
+    if gid:
+        person = Person.objects.filter(gutenberg_id=gid).first()
+        if person:
+            Person.objects.filter(pk=person.pk).update(
+                name=data['name'],
+                birth_year=data['birth'],
+                death_year=data['death'],
+            )
+            return person
+        return Person.objects.create(
+            gutenberg_id=gid,
             name=data['name'],
             birth_year=data['birth'],
-            death_year=data['death']
+            death_year=data['death'],
         )
-    
+    # Fallback: no agent ID in RDF (rare)
+    person, _ = Person.objects.get_or_create(
+        name=data['name'],
+        birth_year=data['birth'],
+        death_year=data['death'],
+    )
     return person
 
 

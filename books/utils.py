@@ -3,6 +3,11 @@ import re
 
 
 LINE_BREAK_PATTERN = re.compile(r'[ \t]*[\n\r]+[ \t]*')
+RELATED_BOOK_RE = re.compile(
+    r'gutenberg\.org/ebooks/(\d+)'
+    r'|[Ee][Bb]ook\s*#\s*(\d+)'
+    r'|(?<!\w)#(\d+)'
+)
 NAMESPACES = {
     'dc': 'http://purl.org/dc/terms/',
     'dcam': 'http://purl.org/dc/dcam/',
@@ -54,7 +59,12 @@ def get_book(id, xml_file_path):
         'formats': {},
         'downloads': None,
         'bookshelves': [],
-        'copyright': None
+        'copyright': None,
+        'published_year': None,
+        'wikipedia_url': '',
+        'reading_score': '',
+        'reading_score_value': None,
+        'related_books': [],
     }
 
     # Authors
@@ -147,6 +157,43 @@ def get_book(id, xml_file_path):
     summaries = book.findall('.//{%(pg)s}marc520' % NAMESPACES)
     result['summaries'] = [summary.text for summary in summaries]
 
+    # Published year (dcterms:issued → YYYY-MM-DD → int year)
+    issued = book.find('.//{%(dc)s}issued' % NAMESPACES)
+    if issued is not None and issued.text:
+        try:
+            result['published_year'] = int(issued.text[:4])
+        except (ValueError, TypeError):
+            pass
+
+    # Wikipedia URL (from dcterms:description)
+    for desc in book.findall('.//{%(dc)s}description' % NAMESPACES):
+        if desc.text:
+            m = re.search(r'https?://[^\s]*wikipedia\.org[^\s]*', desc.text)
+            if m:
+                result['wikipedia_url'] = m.group(0)
+                break
+
+    # Related books (cross-references in dcterms:description)
+    seen_ids = set()
+    for desc in book.findall('.//{%(dc)s}description' % NAMESPACES):
+        if desc.text:
+            for m in RELATED_BOOK_RE.finditer(desc.text):
+                raw_id = int(m.group(1) or m.group(2) or m.group(3))
+                if raw_id != int(id):
+                    seen_ids.add(raw_id)
+    result['related_books'] = sorted(seen_ids)
+
+    # Reading ease (pgterms:marc908) — e.g. "Reading ease score: 78.7 (7th grade). Fairly easy to read."
+    marc908_el = book.find('.//{%(pg)s}marc908' % NAMESPACES)
+    if marc908_el is not None and marc908_el.text:
+        result['reading_score'] = marc908_el.text
+        m = re.search(r'Reading ease score:\s*([\d.]+)', marc908_el.text)
+        if m:
+            try:
+                result['reading_score_value'] = float(m.group(1))
+            except ValueError:
+                pass
+
     return result
 
 
@@ -156,7 +203,17 @@ def get_person(person_element):
     if name is None:
         return None
 
+    # Extract Gutenberg agent ID from rdf:about on the pg:agent child element
+    gutenberg_id = None
+    agent_el = person_element.find('{%(pg)s}agent' % NAMESPACES)
+    if agent_el is not None:
+        about = agent_el.get('{%(rdf)s}about' % NAMESPACES, '')
+        m = re.search(r'(\d+)$', about)  # "2009/agents/37" → 37
+        if m:
+            gutenberg_id = int(m.group(1))
+
     person = {
+        'gutenberg_id': gutenberg_id,
         'birth': None,
         'death': None,
         'name': safe_unicode(name.text, encoding='UTF-8'),
