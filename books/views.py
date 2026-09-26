@@ -86,8 +86,9 @@ class BookViewSet(viewsets.ModelViewSet):
 
         search_string = self.request.GET.get('search')
         if search_string is not None:
+            search_string = search_string.replace('\x00', '')
             search_terms = search_string.split(' ')
-            for term in search_terms[:32]:
+            for term in search_terms[:4]:
                 queryset = queryset.filter(
                     Q(authors__name__icontains=term) | Q(title__icontains=term)
                 )
