@@ -2,7 +2,7 @@ Gutendex
 ========
 
 Gutendex is a simple, self-hosted [web API](https://en.wikipedia.org/wiki/Web_API) for serving book
-catalog information from [Project Gutenberg](https://www.gutenberg.org/wiki/Main_Page), an online
+catalog information from [Project Gutenberg](https://www.gutenberg.org), an online
 library of free ebooks.
 
 Try it at [`gutendex.com`](http://gutendex.com).
