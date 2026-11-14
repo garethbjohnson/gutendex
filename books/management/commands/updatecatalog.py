@@ -1,14 +1,13 @@
 from subprocess import call
-import json
 import os
 import shutil
-from time import strftime
-import sys
-import urllib.request
+import requests
+from time import strftime, sleep
 
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 from books import utils
 from books.models import *
@@ -46,6 +45,50 @@ def log(*args):
         log_file.write(text)
 
 
+def download_file(url, path, retries=5):
+    for i in range(retries):
+        try:
+            with requests.get(url, stream=True, timeout=60) as r:
+                r.raise_for_status()
+                with open(path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            return
+        except (requests.exceptions.RequestException, Exception) as e:
+            if i == retries - 1:
+                raise
+            log(f'  Download failed ({e}). Retrying in 5 seconds... ({i + 1}/{retries})')
+            sleep(5)
+
+
+def bulk_create_in_batches(manager, objects, batch_size=500):
+    for start in range(0, len(objects), batch_size):
+        manager.bulk_create(
+            objects[start:start + batch_size],
+            batch_size=batch_size
+        )
+
+
+def delete_in_batches(manager, book_ids, batch_size=5000):
+    for start in range(0, len(book_ids), batch_size):
+        manager.filter(
+            book_id__in=book_ids[start:start + batch_size]
+        ).delete()
+
+
+def get_or_create_many(model, field_name, values, objects):
+    new_objects = [
+        model(**{field_name: value})
+        for value in set(values)
+        if value not in objects
+    ]
+    bulk_create_in_batches(model.objects, new_objects)
+    objects.update({
+        getattr(obj, field_name): obj for obj in new_objects
+    })
+
+
 def put_catalog_in_db():
     book_ids = []
     for directory_item in os.listdir(settings.CATALOG_RDF_DIR):
@@ -59,193 +102,179 @@ def put_catalog_in_db():
             else:
                 book_ids.append(book_id)
     book_ids.sort()
-    book_directories = [str(id) for id in book_ids]
-
-    for directory in book_directories:
-        id = int(directory)
-
-        if (id > 0) and (id % 500 == 0):
-            log('    %d' % id)
-
-        book_path = os.path.join(
-            settings.CATALOG_RDF_DIR,
-            directory,
-            'pg' + directory + '.rdf'
+    existing_books = {
+        book.gutenberg_id: book for book in Book.objects.all()
+    }
+    people = {}
+    for person in Person.objects.all():
+        people.setdefault(
+            (person.name, person.birth_year, person.death_year),
+            person
         )
+    bookshelves = {obj.name: obj for obj in Bookshelf.objects.all()}
+    languages = {obj.code: obj for obj in Language.objects.all()}
+    subjects = {obj.name: obj for obj in Subject.objects.all()}
 
-        book = utils.get_book(id, book_path)
+    relation_specs = [
+        (Book.authors.through, 'person', 'authors'),
+        (Book.editors.through, 'person', 'editors'),
+        (Book.translators.through, 'person', 'translators'),
+        (Book.bookshelves.through, 'bookshelf', 'bookshelves'),
+        (Book.languages.through, 'language', 'languages'),
+        (Book.subjects.through, 'subject', 'subjects'),
+    ]
+    relation_objects = {
+        'authors': people,
+        'editors': people,
+        'translators': people,
+        'bookshelves': bookshelves,
+        'languages': languages,
+        'subjects': subjects,
+    }
 
-        try:
-            '''Make/update the book.'''
-
-            book_in_db = Book.objects.filter(gutenberg_id=id)
-
-            if book_in_db.exists():
-                book_in_db = book_in_db[0]
-                book_in_db.copyright = book['copyright']
-                book_in_db.download_count = book['downloads']
-                book_in_db.media_type = book['type']
-                book_in_db.title = book['title']
-                book_in_db.save()
-            else:
-                book_in_db = Book.objects.create(
-                    gutenberg_id=id,
-                    copyright=book['copyright'],
-                    download_count=book['downloads'],
-                    media_type=book['type'],
-                    title=book['title']
-                )
-
-            ''' Make/update the authors. '''
-
-            authors = []
-            for author in book['authors']:
-                person = get_or_create_person(author)
-                authors.append(person)
-
-            book_in_db.authors.clear()
-            for author in authors:
-                book_in_db.authors.add(author)
-
-            ''' Make/update the editors. '''
-
-            editors = []
-            for editor in book['editors']:
-                person = get_or_create_person(editor)
-                editors.append(person)
-
-            book_in_db.editors.clear()
-            for editor in editors:
-                book_in_db.editors.add(editor)
-
-            ''' Make/update the translators. '''
-
-            translators = []
-            for translator in book['translators']:
-                person = get_or_create_person(translator)
-                translators.append(person)
-
-            book_in_db.translators.clear()
-            for translator in translators:
-                book_in_db.translators.add(translator)
-
-            ''' Make/update the book shelves. '''
-
-            bookshelves = []
-            for shelf in book['bookshelves']:
-                shelf_in_db = Bookshelf.objects.filter(name=shelf)
-                if shelf_in_db.exists():
-                    shelf_in_db = shelf_in_db[0]
-                else:
-                    shelf_in_db = Bookshelf.objects.create(name=shelf)
-                bookshelves.append(shelf_in_db)
-
-            book_in_db.bookshelves.clear()
-            for bookshelf in bookshelves:
-                book_in_db.bookshelves.add(bookshelf)
-
-            ''' Make/update the formats. '''
-
-            old_formats = Format.objects.filter(book=book_in_db)
-
-            format_ids = []
-            for format_ in book['formats']:
-                format_in_db = Format.objects.filter(
-                    book=book_in_db,
-                    mime_type=format_,
-                    url=book['formats'][format_]
-                )
-                if format_in_db.exists():
-                    format_in_db = format_in_db[0]
-                else:
-                    format_in_db = Format.objects.create(
-                        book=book_in_db,
-                        mime_type=format_,
-                        url=book['formats'][format_]
-                    )
-                format_ids.append(format_in_db.id)
-
-            for old_format in old_formats:
-                if old_format.id not in format_ids:
-                    old_format.delete()
-
-            ''' Make/update the languages. '''
-
-            languages = []
-            for language in book['languages']:
-                language_in_db = Language.objects.filter(code=language)
-                if language_in_db.exists():
-                    language_in_db = language_in_db[0]
-                else:
-                    language_in_db = Language.objects.create(code=language)
-                languages.append(language_in_db)
-
-            book_in_db.languages.clear()
-            for language in languages:
-                book_in_db.languages.add(language)
-
-            ''' Make/update subjects. '''
-
-            subjects = []
-            for subject in book['subjects']:
-                subject_in_db = Subject.objects.filter(name=subject)
-                if subject_in_db.exists():
-                    subject_in_db = subject_in_db[0]
-                else:
-                    subject_in_db = Subject.objects.create(name=subject)
-                subjects.append(subject_in_db)
-
-            book_in_db.subjects.clear()
-            for subject in subjects:
-                book_in_db.subjects.add(subject)
-
-            ''' Make/update summaries. '''
-
-            old_summaries = Summary.objects.filter(book=book_in_db)
-
-            summary_ids = []
-            for summary in book['summaries']:
-                summary_in_db = Summary.objects.filter(book=book_in_db, text=summary)
-                if summary_in_db.exists():
-                    summary_in_db = summary_in_db[0]
-                else:
-                    summary_in_db = Summary.objects.create(
-                        book=book_in_db, text=summary
-                    ) 
-                summary_ids.append(summary_in_db.id)
-
-            for old_summary in old_summaries:
-                if old_summary.id not in summary_ids:
-                    old_summary.delete()
-
-        except Exception as error:
-            book_json = json.dumps(book, indent=4)
-            log(
-                '  Error while putting this book info in the database:\n',
-                book_json,
-                '\n'
+    batch_size = 500
+    for start in range(0, len(book_ids), batch_size):
+        batch_ids = book_ids[start:start + batch_size]
+        books = {}
+        for book_id in batch_ids:
+            directory = str(book_id)
+            book_path = os.path.join(
+                settings.CATALOG_RDF_DIR,
+                directory,
+                'pg' + directory + '.rdf'
             )
-            raise error
+            books[book_id] = utils.get_book(book_id, book_path)
 
+        with transaction.atomic():
+            new_books = []
+            updated_books = []
+            book_objects = {}
+            for book_id, data in books.items():
+                book = existing_books.get(book_id)
+                if book is None:
+                    book = Book(gutenberg_id=book_id)
+                    new_books.append(book)
+                else:
+                    updated_books.append(book)
 
-def get_or_create_person(data):
-    person = Person.objects.filter(
-        name=data['name'],
-        birth_year=data['birth'],
-        death_year=data['death']
-    )
+                book.copyright = data['copyright']
+                book.download_count = data['downloads']
+                book.media_type = data['type']
+                book.title = data['title']
+                book_objects[book_id] = book
 
-    if person.exists():
-        person = person[0]
-    else:
-        person = Person.objects.create(
-            name=data['name'],
-            birth_year=data['birth'],
-            death_year=data['death']
-        )
-    
-    return person
+            bulk_create_in_batches(Book.objects, new_books)
+            existing_books.update({
+                book.gutenberg_id: book for book in new_books
+            })
+            for batch_start in range(0, len(updated_books), batch_size):
+                Book.objects.bulk_update(
+                    updated_books[batch_start:batch_start + batch_size],
+                    ['copyright', 'download_count', 'media_type', 'title'],
+                    batch_size=batch_size
+                )
 
+            people_data = {}
+            for data in books.values():
+                for person_data in (
+                    data['authors'] + data['editors'] + data['translators']
+                ):
+                    key = (
+                        person_data['name'],
+                        person_data['birth'],
+                        person_data['death']
+                    )
+                    people_data.setdefault(key, person_data)
+            new_people = [
+                Person(
+                    name=key[0],
+                    birth_year=key[1],
+                    death_year=key[2]
+                )
+                for key in people_data
+                if key not in people
+            ]
+            bulk_create_in_batches(Person.objects, new_people)
+            people.update({
+                (person.name, person.birth_year, person.death_year): person
+                for person in new_people
+            })
+
+            get_or_create_many(
+                Bookshelf,
+                'name',
+                [value for data in books.values() for value in data['bookshelves']],
+                bookshelves
+            )
+            get_or_create_many(
+                Language,
+                'code',
+                [value for data in books.values() for value in data['languages']],
+                languages
+            )
+            get_or_create_many(
+                Subject,
+                'name',
+                [value for data in books.values() for value in data['subjects']],
+                subjects
+            )
+
+            database_book_ids = [
+                book.id for book in book_objects.values()
+            ]
+            for through, _, _ in relation_specs:
+                delete_in_batches(through.objects, database_book_ids)
+            delete_in_batches(Format.objects, database_book_ids)
+            delete_in_batches(Summary.objects, database_book_ids)
+
+            for through, related_field, data_field in relation_specs:
+                seen = set()
+                rows = []
+                for book_id, data in books.items():
+                    if related_field == 'person':
+                        related_ids = [
+                            relation_objects[data_field][
+                                (person['name'], person['birth'], person['death'])
+                            ].id
+                            for person in data[data_field]
+                        ]
+                    else:
+                        related_ids = [
+                            relation_objects[data_field][value].id
+                            for value in data[data_field]
+                        ]
+                    for related_id in related_ids:
+                        key = (book_id, related_id)
+                        if key not in seen:
+                            seen.add(key)
+                            rows.append(through(
+                                book_id=book_objects[book_id].id,
+                                **{related_field + '_id': related_id}
+                            ))
+                bulk_create_in_batches(through.objects, rows)
+
+            formats = []
+            summaries = []
+            for book_id, data in books.items():
+                formats.extend(
+                    Format(
+                        book=book_objects[book_id],
+                        mime_type=mime_type,
+                        url=url
+                    )
+                    for mime_type, url in data['formats'].items()
+                )
+                summaries.extend(
+                    Summary(book=book_objects[book_id], text=text)
+                    for text in set(data['summaries'])
+                )
+            bulk_create_in_batches(Format.objects, formats)
+            bulk_create_in_batches(Summary.objects, summaries)
+
+        log('    Imported %d of %d books' % (
+            min(start + batch_size, len(book_ids)),
+            len(book_ids)
+        ))
 
 def send_log_email():
     if not (settings.ADMIN_EMAILS or settings.EMAIL_HOST_ADDRESS):
@@ -308,17 +337,17 @@ class Command(BaseCommand):
                 os.makedirs(TEMP_PATH)
 
             log('  Downloading compressed catalog...')
-            urllib.request.urlretrieve(URL, DOWNLOAD_PATH)
+            download_file(URL, DOWNLOAD_PATH)
 
             log('  Decompressing catalog...')
-            if not os.path.exists(DOWNLOAD_PATH):
-                os.makedirs(DOWNLOAD_PATH)
+
             with open(os.devnull, 'w') as null:
-                call(
+                result = call(
                     ['tar', 'fjvx', DOWNLOAD_PATH, '-C', TEMP_PATH],
                     stdout=null,
-                    stderr=null
-                )
+                    stderr=null)
+            if result:
+                raise CommandError('Could not decompress the downloaded catalog.')
 
             log('  Detecting stale directories...')
             if not os.path.exists(MOVE_TARGET_PATH):
@@ -340,19 +369,11 @@ class Command(BaseCommand):
                 shutil.rmtree(path)
 
             log('  Replacing old catalog files...')
-            with open(os.devnull, 'w') as null:
-                with open(LOG_PATH, 'a') as log_file:
-                    call(
-                        [
-                            'rsync',
-                            '-va',
-                            '--delete-after',
-                            MOVE_SOURCE_PATH + '/',
-                            MOVE_TARGET_PATH
-                        ],
-                        stdout=null,
-                        stderr=log_file
-                    )
+            shutil.copytree(
+                MOVE_SOURCE_PATH,
+                MOVE_TARGET_PATH,
+                dirs_exist_ok=True
+            )
 
             log('  Putting the catalog in the database...')
             put_catalog_in_db()
@@ -365,6 +386,8 @@ class Command(BaseCommand):
             error_message = str(error)
             log('Error:', error_message)
             log('')
-            shutil.rmtree(TEMP_PATH)
+            if os.path.exists(TEMP_PATH):
+                shutil.rmtree(TEMP_PATH)
+            raise CommandError(error_message) from error
 
         send_log_email()
